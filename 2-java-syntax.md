@@ -22,7 +22,7 @@
 * private
 ##### 1.2.2 非访问相关的修饰符 （其他用途）
 * static
-* final
+* final ``修饰类和方法时，不可被继承不可覆盖重写，修饰变量时，相当于 const。``
 * abstract
 * synchronized
 * volatile
@@ -127,7 +127,8 @@ public class Puppy {
 
 #### 2.1 继承与多态
 ##### 2.1.1 继承
-***extends*** —— abstract / non-abstract
+***extends*** —— abstract / non-abstract  ``注意，Java 语言是单继承的。``
+
 ```java
 public class Animal {
 }
@@ -145,6 +146,7 @@ public class Dog extends Mammal {
 * abstract 的概念源自于 “不能实例化”。
 ##### 2.1.2 多态
 ***implements*** —— interface
+
 ```java
 /* File name : Animal.java */
 interface Animal {
@@ -268,3 +270,348 @@ Java 中没有 “析构” 的概念，也不存在析构函数，代之的是 
 ```
 
 #### 2.3 标准库
+###### 好用、常用，又由 JDK 提供。 不需要程序员自己去安装配置，是标准库与其他库的关键区别。
+
+##### 2.3.1 Scanner 类
+```java
+import java.util.Scanner;  // 导包
+
+Scanner sc = new Scanner(System.in);
+
+# 遍历
+While(sc.hasNext()) {
+    ...
+}
+
+# 读取
+获取键盘输入的一个 int 数字： int num = sc.nextInit();
+获取键盘输入的一个字符串： String str = sc.next();
+请查看 Scanner API 文档。 https://docs.oracle.com/javase/7/docs/api/java/util/Scanner.html
+```
+
+Java 标准库 API 查询手册： https://docs.oracle.com/javase/7/docs/api/allclasses-noframe.html
+
+##### 2.3.2 Random 类
+```java
+import java.util.Random;
+
+Random r = new Random();
+
+# 生成一个随机数
+获取一个随机的 int 数字： int num = r.nextInt();  // 范围是 int 所有范围，并有正负两种。
+获取一个指定范围的 int 数字： int num = r.nextInt(3);
+```
+
+##### 2.3.3 ArrayList 类
+###### 为什么有数组还要有 ArrayList? 因为数组一旦创建，程序运行期间长度不可变。
+```java
+import java.util.ArrayList;
+
+ArrayList<String> list = new ArrayList<String>();
+# ArrayList<String> list = new ArrayList<>();  // JDK 1.6 以后支持的新写法
+# 注意，泛型只能是引用类型，不能是基本类型。
+# 因此，基本数据类型的引用类型派上用场： Byte,Short,Integer,Long,Charactor,Float,Double,Boolean.
+
+# 访问
+方式1： .get()
+    for (int i = 0; i < list.size(); i++) {
+        String str = list.get(i);
+    }
+方式2： for (:)
+    for (String str: list) {
+        System.out.println(str);
+    }
+方式3： iterator
+    for (Iterator<String> iter = list.iterator(); iter.hasNext(); ) {
+        System.out.println(iter.next());
+    }
+```
+
+##### 2.3.4 String 类
+###### 注意，String 类代表字符串，字符串是常量！ 意思是，它们的值在创建之后不能更改(永不可变更)。
+```java
+# 创建
+1. 从字符串常量创建 String。
+2. 从 char[] 创建 String。
+3. 从 byte[] 创建 String。
+
+# 字符串比较
+1. str1 == str2;
+2. str1.equals(str2);
+
+# 字符获取
+public int String.length() 方法 —— 获取字符个数
+public char String.charAt(int index) 方法 —— 获取指定索引位置的单个字符
+public int String.indexOf(String str) 方法 —— 返回字符串模式首次出现的位置，没有返回 -1.
+
+# 截取
+public String String.substring(int index);
+public String String.substring(int begin, int end);
+# 拼接
+public String String.concat(String str) 方法 —— 拼接两个字符串，返回一个新的字符串。（牢记字符串的不可变更特性）
+
+# 转换
+public char[] String.toCharArray();
+public byte[] String.getBytes();
+public String String.replace(CharSequence oldstr, CharSequence newstr);  // 使用 newstr 替换掉所有的 oldstr 并返回一个新字符串
+
+# 分割
+public String[] String.split(String regex);  // 具体案例请查文档。
+```
+
+##### 2.3.5 Arrays 类
+###### Arrays 类是一个静态类，不是用于创建 Arrays 对象，而是用于提供一些数组操作方法的集合。
+```java
+/*
+ *  public static String Arrays.toString(数组)；
+ *  public static void Arrays.sort(数组)；  // 默认为升序，（排序后从小到大排列）。
+ */
+
+import java.util.Arrays;
+
+int[] intArray = {10, 20, 30};
+String intStr = Arrays.toString(intArray);
+```
+
+###### 补充知识： Java 中的 -s 类
+```
+Java 中的 -s 类，普遍表示该类是原始类的工具类。 是一个 static 类，提供一些操作方法的集合。
+例如：
+    数组 -> Arrays
+    Object -> Objects
+```
+
+##### 2.3.6 Math 类
+###### Math 类也是一个静态类，不是用于创建 Math 对象。
+```java
+import java.lang.Math;
+
+public static double Math.abs(double num);  // 取绝对值
+public static double Math.ceil(double num); // 向上取整
+public static double Math.floor(double num); // 向下取整
+public static long round(double num); // 四舍五入
+```
+
+##### 2.3.7 Date 类
+* Date 类
+* SimpleDateFormat 类
+```java
+import java.util.Date;
+import java.text.SimpleDateFormat;
+
+# String to Date
+String birthdayString = "1991-01-01"
+SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd");
+Date birthdayDate = sdf.parse(birthdayString);
+
+# Date to String
+Date todayDate = new Date();
+String todayString = sdf.format(todayDate.getTime());
+
+# 计算时间差
+long birthdayDateTime = birthdayDate.getTime();
+long todayDateTime = todayDate.getTime();
+# 求时间差，请先使用 .getTime() 获得毫秒值，然后做差！
+```
+
+##### 2.3.8 Calender 类
+###### Data 类的增强、库充版
+```java
+import java.util.Calender;
+
+Calender c = Calender.getInstance();
+```
+
+##### 2.3.9 System 类
+###### 静态类，不是用于创建 System 对象，而是提供了大量的静态方法，获取与系统相关的信息或进行系统级操作。
+
+#### 2.4 数据结构 （集合）
+集合的概念是 “容器”，用来存储多个数据。 根据存储结构共分为 2 大类：
+* 单列集合 ``Collection``
+* 双列集合 ``Map``
+
+##### Java 集合的架构
+<div align="center"><img src="pics/frameware-of-java-collection.png" width="45%"></div>
+
+##### 学集合是学什么？
+* 会使用集合存储数据
+* 会遍历集合
+* 掌握每种集合的特性
+
+##### 2.4.1 Collection 类
+###### List、Queue、Set 的概念都属于 Collection 的范畴。 
+注意，Set 不允许存储重复元素，并且无法通过索引的方法获取/访问元素。
+
+##### 2.4.2 Map 类
+###### Map 的概念是 key-value 对。
+
+###### 补充知识： 泛型
+```
+# 定义和使用含有泛型的类
+public class Aclass<E> {
+    private E name;
+    
+    public E getName() {
+        return name;
+    }
+    
+    public void setName(E name) {
+        this.name = name;
+    }
+}
+
+# 定义和使用含有泛型的接口
+public interface Ainterface<E> {
+    public void method(E e);
+}
+
+public Aclass implements Ainterface<E> {
+    ...
+}
+
+public Bclass implements Ainterface<String> {
+    ...
+}
+```
+
+##### Java 集合的使用练习，参考文档专项强化练习。
+
+#### 2.5 异常编程和多线程编程
+##### 2.5.1 异常编程
+Java 异常的体系结构
+<div align="center"><img src="pics/java-exceptions.png" width="40%"></div>
+
+```java
+import java.io.File;
+import java.io.FileReader;
+import java.io.IOException;
+
+public class ReadData_Demo {
+
+   public static void main(String args[]) {
+      FileReader fr = null;		
+      try {
+         File file = new File("file.txt");
+         fr = new FileReader(file); char [] a = new char[50];
+         fr.read(a);   // reads the content to the array
+         for(char c : a)
+         System.out.print(c);   // prints the characters one by one
+      } catch (IOException e) {
+         e.printStackTrace();
+      }finally {
+         try {
+            fr.close();
+         } catch (IOException ex) {		
+            ex.printStackTrace();
+         }
+      }
+   }
+}
+```
+* 一般的，当使用或涉及资源的时候一定要去使用 ``try-catch-finally {try-catch}`` 结构！
+
+##### 2.5.2 多线程编程
+```java
+# 方式1： Implements a Runnable Interface
+class RunnableDemo implements Runnable {
+   private Thread t;
+   private String threadName;
+   
+   RunnableDemo( String name) {
+      threadName = name;
+      System.out.println("Creating " +  threadName );
+   }
+   
+   public void run() {
+      System.out.println("Running " +  threadName );
+      try {
+         for(int i = 4; i > 0; i--) {
+            System.out.println("Thread: " + threadName + ", " + i);
+            // Let the thread sleep for a while.
+            Thread.sleep(50);
+         }
+      } catch (InterruptedException e) {
+         System.out.println("Thread " +  threadName + " interrupted.");
+      }
+      System.out.println("Thread " +  threadName + " exiting.");
+   }
+   
+   public void start () {
+      System.out.println("Starting " +  threadName );
+      if (t == null) {
+         t = new Thread (this, threadName);
+         t.start ();
+      }
+   }
+}
+
+public class TestThread {
+
+   public static void main(String args[]) {
+      RunnableDemo R1 = new RunnableDemo( "Thread-1");
+      R1.start();
+      
+      RunnableDemo R2 = new RunnableDemo( "Thread-2");
+      R2.start();
+   }   
+}
+
+# 方式2： Extends a Thread Class
+class ThreadDemo extends Thread {
+   private Thread t;
+   private String threadName;
+   
+   ThreadDemo( String name) {
+      threadName = name;
+      System.out.println("Creating " +  threadName );
+   }
+   
+   public void run() {
+      System.out.println("Running " +  threadName );
+      try {
+         for(int i = 4; i > 0; i--) {
+            System.out.println("Thread: " + threadName + ", " + i);
+            // Let the thread sleep for a while.
+            Thread.sleep(50);
+         }
+      } catch (InterruptedException e) {
+         System.out.println("Thread " +  threadName + " interrupted.");
+      }
+      System.out.println("Thread " +  threadName + " exiting.");
+   }
+   
+   public void start () {
+      System.out.println("Starting " +  threadName );
+      if (t == null) {
+         t = new Thread (this, threadName);
+         t.start ();
+      }
+   }
+}
+
+public class TestThread {
+
+   public static void main(String args[]) {
+      ThreadDemo T1 = new ThreadDemo( "Thread-1");
+      T1.start();
+      
+      ThreadDemo T2 = new ThreadDemo( "Thread-2");
+      T2.start();
+   }   
+}
+```
+
+* JDK 1.5 以后提供的有线程池的功能支持。 ``Executors``
+
+#### 2.6 文件/IO/网络编程
+* File 类
+* OutputStream / FileOutputStream 类
+* InputStream / FileInputStream 类
+* Socket / ServerSocket 类  # client 端用 Socket，Server 端用 ServerSocket
+
+#### 2.6 Java 的配置文件
+properties 文件是一种配置文件，主要用于表达配置信息，文件类型为 *.properties，格式为文本文件，文件的内容是格式是 "键=值" 的格式。
+
+通过 ``Properties`` 类来访问管理。
+
+###### 实际项目中，自己写一个 XML 工具类来做配置文件管理。
