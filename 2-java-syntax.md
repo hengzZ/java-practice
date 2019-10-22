@@ -94,11 +94,11 @@ public class Puppy {
 * for
 * do..while
 * if..else if
-* switch
+* switch ``switch 语句使用的变量，可以是 integer 类型、String 类型，以及 enums 类型。 convertable integers(即：byte,short,char)会被自动类型转换为 integer。``
 * ? :
 
 #### 1.6 函数定义
-编写 Java 函数，一定时刻牢记： 函数是一个类的函数！
+编写 Java 函数，一定时刻牢记： 函数是一个类的函数！<br>（不要想着去编写全局函数，时刻牢记面向对象。）
 
 #### 1.7 Java 代码编写请注意
 ##### 1.7.1 源代码编写注意
