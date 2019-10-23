@@ -23,7 +23,7 @@ URL、URI 都涉及 Resource 的概念，那么什么是资源？
 * CSS : 用于美化页面，布局页面。
 * JavaScript : 用于控制页面的元素，使页面有一些动态效果。 （注意，动态效果不是动态资源的概念。）
 
-HTML-CSS-JS 扫盲，请参考 https://github.com/hengzZ/peter/tree/master/h5-css-javascript。
+HTML-CSS-JS 扫盲，请参考 https://github.com/hengzZ/peter/tree/master/h5-css-javascript
 
 框架/工具
 * Bootstrap : 定义了很多的 css 式样和 js 插件，使开发人员可以直接使用这些式样和插件，得到丰富的页面效果。
@@ -34,7 +34,7 @@ HTML-CSS-JS 扫盲，请参考 https://github.com/hengzZ/peter/tree/master/h5-cs
 * holder.js : 图片占位器。 用于原型设计的素材填充占位。
 
 ###### 响应式布局是使用框架的一个重要原因。 响应式布局的概念是，写一套代码就可以适配不同的分辨率和设备。
-响应式布局扫盲 https://github.com/hengzZ/peter/blob/master/h5-css-javascript/responsive-layout.md。
+响应式布局扫盲 https://github.com/hengzZ/peter/blob/master/h5-css-javascript/responsive-layout.md
 
 ##### 动态资源学习
 * 
