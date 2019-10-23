@@ -31,6 +31,7 @@ HTML-CSS-JS 扫盲，请参考 https://github.com/hengzZ/peter/tree/master/h5-cs
     * Bootstrap js 插件查询 https://v3.bootcss.com/javascript/
     * Bootstrap 组件(复合HTML元素) 查询 https://v3.bootcss.com/components/
 * JQuery : 一个单纯的 js 框架。 用于简化 js 开发（编码代码书写）。
+* holder.js : 图片占位器。 用于原型设计的素材填充占位。
 
 ###### 响应式布局是使用框架的一个重要原因。 响应式布局的概念是，写一套代码就可以适配不同的分辨率和设备。
 响应式布局扫盲 https://github.com/hengzZ/peter/blob/master/h5-css-javascript/responsive-layout.md。
