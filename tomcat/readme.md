@@ -77,8 +77,10 @@ sh startup.sh
 ```
 1. 黑窗口一闪而过
    原因： 没有正确配置 JAVA_HOME 环境变量。 （很多 bat 脚本用到了。）
-   解决： 配置 JAVA_HOME 环境变量为 Tomcat 的路径。 
-        然后，将 %JAVA_HOME%bin; 添加至 Path 环境变量中。
+   解决： 1. 配置 JAVA_HOME 环境变量为 Tomcat 的路径。
+         2. 然后，将 %JAVA_HOME%bin; 添加至 Path 环境变量中。
+         3. 配置 CATALINA_HOME 环境变量为 Tomcat 的路径。
+         4. 配置 JRE_HOME 环境变量为 jdk 的安装路径。
 2. 启动报错
    原因： 端口占用。
    解决： 暴力方案 - 找到占用程序，关闭它。 netstat -ano
