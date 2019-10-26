@@ -37,5 +37,14 @@ HTML-CSS-JS 扫盲，请参考 https://github.com/hengzZ/peter/tree/master/h5-cs
 响应式布局扫盲 https://github.com/hengzZ/peter/blob/master/h5-css-javascript/responsive-layout.md
 
 ##### 动态资源学习
-* 
-* 
+基础部分：
+* Java Web 三大组件之 Servlet。 （Tomcat 服务器软件）
+* Http 协议 Request 和 Response 对象。
+* Cookie 和 Session。
+* JSP （EL+JSTL） 服务器端页面技术。
+* Java Web 三大组件之 Filter 和 Listener。
+
+三层架构：
+* 界面层（表示层/web层） SpringMVC
+* 业务逻辑层（servlet层） Spring
+* 数据访问层（dao-Data Access Object层） MyBatis
