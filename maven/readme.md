@@ -135,3 +135,106 @@ pom.xml 文件包含了一个 maven 构建的 Java 项目包含的所有信息�
 
 以图的形式展示 pom.xml 文件的内容组成，如下：
 <div align="center"><img src="../pics/maven-pom.png" width="60%"></div>
+
+<br>
+
+# IDEA + Maven 进行 Java 开发
+
+### 在 IDEA 中关联 Maven
+##### 1. 配置 IDEA
+* 打开 IDEA，点击 File 菜单，选择 Settings；
+* 在 Build,Execution,Deployment > Build Tools 中找到 Maven；
+* 点击 Maven 菜单，在右侧配置框中设置：
+    * Maven home directory： Maven 目录路径；
+    * User settings file:  Maven 的 conf/settings.xml 文件路径；
+    * Local repository: Maven 的 local 仓库路径。 （默认为：${user.home}/.m2/repository）
+* 点击 Maven > Runner 菜单，设置 VM Options: ``-DarchetypeCatalog=internal``。 （运行参数配置，推荐该配置）
+
+###### 关于设置 IDEA + Maven 的网络代理的问题
+```
+1. 在 IDEA 的 File > Settings > Plugins 中设置 IDEA 的代理。
+2. 在 Maven 的 conf/settings.xml 中设置 Maven 的代理。
+# 如果需要代理的话，两个软件都需要设置代理，缺一不可。
+```
+
+##### 2. 测试
+* 打开 IDEA，创建一个新项目（New Project）；
+* 找到左边的 Maven 选项，点击；
+* 此处，注意： 是否使用骨架（archetype）/模板？
+    ```
+    # 1. 使用骨架创建 Java 项目
+    * 勾选 Create from archetype；
+    * 选择要使用的 archetype，如： maven-archetype-quickstart 选项；
+    * 点击 Next，指定： groudID，artifactID，version。
+    ```
+    ```
+    # 2. 不使用骨架创建 Java 项目
+    * 不勾选 Create from archetype；
+    * 点击 Next，指定： groudID，artifactID，version。
+    ```
+    ```
+    # 3. 使用 web 骨架创建 Java 项目
+    * 勾选 Create from archetype；
+    * 选择要使用的 archetype： maven-archetype-webapp 选项；
+    * 点击 Next，指定： groudID，artifactID，version。
+    ```
+    ```
+    # groudID - 公司名称，任意填写。
+    # artifactID - app的名称，自定义。
+    # version - 版本号，目前使用默认的即可。
+    ```
+    ###### 注意: 1. 不推荐使用骨架来创建 Java 项目。 2. 创建项目之后，记得去关注右下角的弹窗，然后选择 “自动加载 Enable Auto-Import”！！
+
+##### 3. 添加文件夹/目录的正确方式 （重要事项）
+* 光标放置于指定目录上，右键，点击 New 创建文件夹；
+* 注意！ 创建成功后，右键，点击 **Mark Directory as**，选择文件夹的性质。 （非常关键！！）
+    * Sources Root （Java 代码目录）
+    * Test Sources Root （配置文件目录）
+    * Resources Root （测试代码目录）
+    * Test Resources Root （测试环境配置文件目录）
+
+##### 4. 运行
+使用 IDEA 运行程序，首先需要配置运行环境： Run > Edit Configurations 。
+* quickstart 骨架，配置 application 选项。 ``设置 JRE 和 Main Class``
+* webapp 骨架，配置 tomcat 选项。 ``templates 中找 tomcat server，进行配置。 注意，一定要去配置 Deployment！ 如果 Deploy at the server startup 栏为空，点击右侧加号添加一个 Artifact，然后就可以（出现）设置下面的 Application context（虚拟目录） 配置。``
+
+配置完成后，点击 Run 或者绿色的小三角运行指定的 Java Class 文件。 /或双击 index.jsp 访问网页。
+
+##### 5. 补充： Maven plugins 环境报错的解决方法
+1. 如果是代理问题，请分别设置 IDEA 和 Maven 的代理。 二者缺一不可。
+2. 如果网络连接正常，则查看报错的 plugin 是哪个，例如： org.apache.maven.plugins:maven-site-plugin:3.3 ，那么：
+   ```
+   注意，所有的 plugins 都是被下载放置于 local repositories 目录下的！
+   1. 查看 org/apache/maven/plugins 目录下的对应文件夹是否存在；
+   2. 存在的话，进入对应的文件夹，删除文件夹内的所有文件；
+   3. 在 IDEA 的 Maven 控制面板中点击 "旋转符号"，Reimport 按钮。 等待重新下载即可。
+   ```
+
+### 为 Maven 工程导入 Jar 包
+1. 编辑 pom.xml 文件，添加 dependencies 标签；
+2. 如果已有 dependencies 标签的话，直接在内部添加 dependency 即可。
+   ```
+   例如：
+   <dependency>
+      <groupId>javax.servlet</groupId>
+      <artifactId>servlet-api</artifactId>
+      <version>2.5</version>
+    </dependency>
+   ```
+3. **如何查找 jar 包的坐标**
+    * 百度搜索 maven 中央仓库：https://mvnrepository.com/ ，打开网页；
+    * 在搜索栏中搜索需要的 jar 包名称即可。
+      ```
+      如： 搜索 jsp 可获得一个条目显示如下：
+      * JSP API
+      javax.servlet » jsp-api
+      # 点击进入，可知道有多少个版本。
+      ```
+
+### 在 IDEA 中执行 Maven 的命令（生命周期执行）
+IDEA 右侧有一个 Maven，点击它就可以显示或缩小控制面板。
+
+* 双击 Lifecycle 中的对应项就是执行对应的命令。
+* 或者，寻找 Maven 面板上的菜单栏，有一个“m”标识的按钮，即命令行运行 mvn。
+
+注意，这就是一个命令行终端。 命令不能执行也有错误原因提示。
