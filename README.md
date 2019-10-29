@@ -1,9 +1,16 @@
 # java-practice
 
 #### 学习目标
-*
-*
-*
+* JavaWeb 三大组件： Servlet、Filter 和 Listener。
+* JavaWeb 三层架构： MyBatis、Spring 和 SpringMVC。
+* HTTP 通信过程
+    * http request 和 response 对象。
+    * cookie 和 session。
+* 集群（分布式）
+    * Redis 缓存技术、 Nginx部署Tomcat集群。
+    * 消息队列、连接池。
+* 响应式布局 Bootstrap。
+* 单页面应用 Ajax/Vue.js。
 
 #### Content
 1. 开发工具与环境配置 [1-development-tools-and-configuration.md](1-development-tools-and-configuration.md)
