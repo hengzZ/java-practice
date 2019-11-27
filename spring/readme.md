@@ -124,3 +124,276 @@ public IAccountService getAccountService() {
 
 #### 4 Spring 的运行逻辑
 Spring 框架监控切入点方法的执行。 一旦监测到切入点方法被执行，使用代理机制动态创建目标对象的代理对象，在代理对象的对应位置，将通知对应的功能织入，然后完成完整的代码逻辑运行。
+
+<br>
+
+# Spring 的 Maven 环境搭建
+
+#### 1 需要的配置文件
+* applicationContext.xml **（Spring 核心配置文件）**
+    * 配置 dao 和 service 依赖
+    * spring 整合 mybatis
+    * 事务配置
+* spring-mvc.xml **（SpringMVC 核心配置文件）**
+    * 配置 web 依赖
+* web.xml **（Maven webapp 核心配置文件）**
+
+推荐将配置文件都放置于 maven webapp 项目下。
+
+#### 2 创建配置文件
+在 maven webapp 项目下的 src/main 目录下，右键，new -> directory，创建一个名为 java 的目录。
+* 在 java 目录上，右键，Mark Directory as -> Source Root。
+* 在 src/main 目录下，创建一个与 java 同级的目录 resources。然后将它标记为 Resources Root。
+* 在 resources 目录中，创建 applicationContext.xml 文件。
+* 在 resources 目录中，创建 spring-mvc.xml 文件。
+* 注意，web.xml 文件在 src/main/webapp/WEB-INF 目录下。
+
+#### 3 填写配置文件内容
+##### 1. 在 pom.xml 中添加 spring-context 依赖
+在 http://mvnrepository.com/ ，搜索 spring-context，点击进入，选择 5.0.2 release，点击，内容如下所示。 添加至 pom.xml dependencies 标签内。
+```xml
+<dependency>
+    <groupId>org.springframework</groupId>
+    <artifactId>spring-context</artifactId>
+    <version>5.0.2.RELEASE</version>
+</dependency>
+```
+注意，spring 的 context 依赖不是一个简单的依赖，导入之后，自动导入 beans、core、aop、expression、jcl 等核心组件。 （因此，添加这一个依赖就可以认为 spring 基础依赖已配置完成。）
+
+##### 2. spring 配置文件模板
+打开 spring 文档，进入 spring-framework-reference 的 Core Section 内容： http://docs.spring.io/spring/docs/5.0.10.RELEASE/spring-framework-reference/core.html ，Ctrl+F 搜索 “xmls”，就可以搜索各种配置文件的模板了。
+
+spring 中文文档 http://www.docs4dev.com/docs/zh/spring-framework/5.1.3.RELEASE/reference
+
+##### 3 applicatonContext.xml
+```xml
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xmlns:context="http://www.springframework.org/schema/context"
+    xmlns:aop="http://www.springframework.org/schema/aop"
+    xmlns:tx="http://www.springframework.org/schema/tx"
+    xsi:schemaLocation="http://www.springframework.org/schema/beans
+        http://www.springframework.org/schema/beans/spring-beans.xsd
+        http://www.springframework.org/schema/context
+        http://www.springframework.org/schema/context/spring-context.xsd
+        http://www.springframework.org/schema/aop
+        http://www.springframework.org/schema/aop/spring-aop.xsd
+        http://www.springframework.org/schema/tx
+        http://www.springframework.org/schema/tx/spring-tx.xsd">
+
+    <!-- 开启注解扫描，管理自定义的 service 和 dao 依赖 -->
+    <context:component-scan base-package="com.petersdemo.ssm.service">
+    </context:component-scan>
+    <context:component-scan base-package="com.petersdemo.ssm.dao">
+    </context:component-scan>
+
+    <!-- Spring 整合 MyBatis (MyBatis 学习内容) -->
+    <context:property-placeholder location="classpath:db.properties"/>
+    <bean id="dataSource" class="线程池java类">
+        <property name="driverClass" value="${jdbc.driver}"/>
+        <property name="jdbcUrl" value="${jdbc.url}"/>
+        <property name="user" value="${jdbc.username}"/>
+        <property name="password" value="${jdbc.password}"/>
+    </bean>
+    <bean id="sqlSessionFactory" class="org.mybatis.spring.SqlSessionFactoryBean">
+        <property name="dataSource" ref="dataSource" />
+    </bean>
+
+    <!-- Spring 的声明式事务管理 -->
+    <bean id="transactionManager" class="org.springframework.jdbc.datasource.DataSourceTransactionManager">
+        <property name="dataSource" ref="dataSource"/>
+    </bean>
+    <tx:annotation-driven transaction-manager="transactionManager"/>
+
+</beans>
+```
+以上包含三部分内容： context（即ioc）、aop、tx（即事务transaction）。
+
+``导入 spring-context 依赖的时候是不包含 spring-tx 的，请搜索并添加依赖``，如下。
+```xml
+<dependency>
+    <groupId>org.springframework</groupId>
+    <artifactId>spring-tx</artifactId>
+    <version>5.0.2.RELEASE</version>
+</dependency>
+```
+
+MyBatis 整合到 Spring 中需要三个依赖： MySQL、MyBatis、MyBatis-Spring。
+```xml
+<dependency>
+    <groupId>org.mybatis</groupId>
+    <artifactId>mybatis</artifactId>
+    <version>3.5.0</version>
+</dependency>
+
+<dependency>
+    <groupId>mysql</groupId>
+    <artifactId>mysql-connector-java</artifactId>
+    <version>8.0.15</version>
+</dependency>
+
+<dependency>
+    <groupId>org.mybatis</groupId>
+    <artifactId>mybatis-spring</artifactId>
+    <version>2.0.3</version>
+</dependency>
+```
+
+注意，在 src/main/resources 目录下，常见一个文件 db.properties。
+```
+jdbc.driver=com.mysql.jdbc.Driver
+jdbc.url=jdbc:mysql://localhost:3306/ssm?useUnicode=true&characterEncoding=utf8
+jdbc.username=root
+jdbc.password=root
+```
+
+Spring 与 MyBatis 聚合，参考 http://mybatis.org/spring/zh/getting-started.html ，以及 Spring 的 Data Access 部分。
+
+Spring 事务管理（Transaction），参考 Spring 文档的 Data Access 部分。
+
+##### 至此，applicationContext.xml 三大核心配置完成。
+
+##### 4 spring-mvc.xml
+```xml
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xmlns:mvc="http://www.springframework.org/schema/mvc"
+    xmlns:context="http://www.springframework.org/schema/context"
+    xmlns:aop="http://www.springframework.org/schema/aop"
+    xsi:schemaLocation="http://www.springframework.org/schema/beans
+        http://www.springframework.org/schema/beans/spring-beans.xsd
+        http://www.springframework.org/schema/mvc
+        https://www.springframework.org/schema/mvc/spring-mvc.xsd
+        http://www.springframework.org/schema/context
+        http://www.springframework.org/schema/context/spring-context.xsd
+        http://www.springframework.org/schema/aop
+        http://www.springframework.org/schema/aop/spring-aop.xsd">
+
+    <!-- 开启注解扫描，管理自定义的 controller 依赖 -->
+    <context:component-scan base-package="com.petersdemo.ssm.controller">
+    </context:component-scan>
+
+    <!-- 配置视图解析器 -->
+    <bean id="viewResolver" class="org.springframework.web.servlet.view.InternalResourceViewResolver">
+        <!-- JSP 文件所在目录 -->
+        <property name="prefix" value="/pages/"/>
+        <!-- 文件的后缀名 -->
+        <property name="suffix" value=".jsp"/>
+    </bean>
+
+    <!-- 设置静态资源不过滤 -->
+    <mvc:resources mapping="/css/**" location="/css/"/>
+    <mvc:resources mapping="/img/**" location="/img/"/>
+    <mvc:resources mapping="/js/**" location="/js/"/>
+    <mvc:resources mapping="/plugins/**" location="/plugins/"/>
+
+    <!-- 开启对 SpringMVC 注解的支持 -->
+    <mvc:annotation-driven/>
+
+    <!--
+        支持 AOP 的注解技术，AOP 底层使用代理技术。
+        JDK 动态代理，要求必须有接口。
+        cglib 代理，生成子类对象，proxy-target-class="true" 默认使用 cglib 的方式。
+    -->
+    <aop:aspectj-autoproxy proxy-target-class="true"/>
+
+</beans>
+```
+Spring MVC 的文档，在 Spring 文档的 Web Servlet 部分。
+
+Spring MVC 的依赖 jar 包有两个： ``spring-web``、``spring-webmvc``。
+```xml
+<dependency>
+    <groupId>org.springframework</groupId>
+    <artifactId>spring-web</artifactId>
+    <version>5.0.2.RELEASE</version>
+</dependency>
+
+<dependency>
+    <groupId>org.springframework</groupId>
+    <artifactId>spring-webmvc</artifactId>
+    <version>5.0.2.RELEASE</version>
+</dependency>
+```
+
+##### 5 web.xml
+```xml
+<?xml version="1.0" encoding="UTF-8"?>
+<web-app xmlns="http://java.sun.com/xml/ns/javaee"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="
+        http://java.sun.com/xml/ns/javaee
+        https://java.sun.com/xml/ns/javaee/web-app_3_0.xsd"
+         version="3.0">
+
+  <!-- 配置加载类路径的配置文件 -->
+  <context-param>
+    <param-name>contextConfigLocation</param-name>
+    <param-value>classpath*:applicationContext.xml,classpath*:spring-security.xml</param-value>
+  </context-param>
+
+  <!-- 配置监听器 -->
+  <listener>
+    <listener-class>org.springframework.web.context.ContextLoaderListener</listener-class>
+  </listener>
+  <!-- 配置监听器，监听 request 域对象的创建和销毁 -->
+  <listener>
+    <listener-class>org.springframework.web.context.request.RequestContextListener</listener-class>
+  </listener>
+
+  <!-- 前端控制器，加载 classpath:spring-mvc.xml 服务器启动创建 servlet -->
+  <servlet>
+    <servlet-name>dispatcherServlet</servlet-name>
+    <servlet-class>org.springframework.web.servlet.DispatcherServlet</servlet-class>
+    <!-- 配置初始化参数，创建完 DispatcherServlet 对象，加载 spring-mvc.xml 配置文件 -->
+    <init-param>
+      <param-name>contextConfigLocation</param-name>
+      <param-value>classpath:spring-mvc.xml</param-value>
+    </init-param>
+    <!-- 服务器启动的时候，让 DispatcherServlet 对象创建 -->
+    <load-on-startup>1</load-on-startup>
+  </servlet>
+  <servlet-mapping>
+    <servlet-name>dispatcherServlet</servlet-name>
+    <url-pattern>*.do</url-pattern>
+  </servlet-mapping>
+
+  <!-- 解决中文乱码过滤器 -->
+  <filter>
+    <filter-name>characterEncodingFilter</filter-name>
+    <filter-class>org.springframework.web.filter.CharacterEncodingFilter</filter-class>
+    <init-param>
+      <param-name>encoding</param-name>
+      <param-value>UTF-8</param-value>
+    </init-param>
+  </filter>
+  <filter-mapping>
+    <filter-name>characterEncodingFilter</filter-name>
+    <url-pattern>/*</url-pattern>
+  </filter-mapping>
+
+  <!-- 委派过滤器 -->
+  <filter>
+    <filter-name>springSecurityFilterChain</filter-name>
+    <filter-class>org.springframework.web.filter.DelegatingFilterProxy</filter-class>
+  </filter>
+  <filter-mapping>
+    <filter-name>springSecurityFilterChain</filter-name>
+    <url-pattern>/*</url-pattern>
+  </filter-mapping>
+
+  <welcome-file-list>
+    <welcome-file>index.html</welcome-file>
+    <welcome-file>index.htm</welcome-file>
+    <welcome-file>index.jsp</welcome-file>
+    <welcome-file>default.html</welcome-file>
+    <welcome-file>default.htm</welcome-file>
+    <welcome-file>default.jsp</welcome-file>
+  </welcome-file-list>
+
+</web-app>
+```
+参考 Spring 文档的 Web Servlet 部分。
+
