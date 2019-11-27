@@ -238,3 +238,24 @@ IDEA 右侧有一个 Maven，点击它就可以显示或缩小控制面板。
 * 或者，寻找 Maven 面板上的菜单栏，有一个“m”标识的按钮，即命令行运行 mvn。
 
 注意，这就是一个命令行终端。 命令不能执行也有错误原因提示。
+
+<br>
+
+# IDEA + Maven 创建嵌套项目 （复合项目）
+
+#### 1 创建父项目
+点击 “New Project” -> Maven -> **"注意，父项目不使用 archetype！"** -> Next，指定 GroudID、ArtifactID -> Next 完成。
+
+#### 2 创建子项目
+注意，创建子项目不是通过 “New Project”，而是通过 **“New Module”**。
+
+鼠标置于父项目文件夹上，右键 “New” -> "Module" -> "Maven"。
+* Java 项目不使用 archetype，直接下一步创建即可。
+* Web 项目使用 archetype 创建 webapp 工程。
+
+以上就是创建多个 Maven 子项目的方法。
+
+#### 3 编译子项目
+点击 IDEA 右侧的 Maven 面板，点击与子项目对应的下拉菜单，选择 “Lifecycle” 中对象的声明周期，右键，然后选择要执行的内容。
+
+或者，左键单击，然后在控制面板上点击 “三角箭头（Run Maven Build）”。
