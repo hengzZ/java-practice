@@ -208,6 +208,11 @@ public IAccountService getAccountService() {
         <property name="dataSource" ref="dataSource" />
     </bean>
 
+    <!-- 扫描 dao 接口 -->
+    <bean id="mapperScanner" class="org.mybatis.spring.mapper.MapperScannerConfigurer">
+        <property name="basePackage" value="com.petersdemo.ssm.dao"/>
+    </bean>
+
     <!-- Spring 的声明式事务管理 -->
     <bean id="transactionManager" class="org.springframework.jdbc.datasource.DataSourceTransactionManager">
         <property name="dataSource" ref="dataSource"/>
@@ -283,7 +288,7 @@ Spring 事务管理（Transaction），参考 Spring 文档的 Data Access 部�
     xsi:schemaLocation="http://www.springframework.org/schema/beans
         http://www.springframework.org/schema/beans/spring-beans.xsd
         http://www.springframework.org/schema/mvc
-        https://www.springframework.org/schema/mvc/spring-mvc.xsd
+        http://www.springframework.org/schema/mvc/spring-mvc.xsd
         http://www.springframework.org/schema/context
         http://www.springframework.org/schema/context/spring-context.xsd
         http://www.springframework.org/schema/aop
@@ -321,6 +326,21 @@ Spring 事务管理（Transaction），参考 Spring 文档的 Data Access 部�
 ```
 以上 xml 语法约束包含： context 配置约束、aop 配置约束、mvc 配置约束。
 
+aop 的支持需要两个依赖 ``spring-aop`` 和 ``spring-aspects``。
+```xml
+<dependency>
+    <groupId>org.springframework</groupId>
+    <artifactId>spring-aop</artifactId>
+    <version>5.0.2.RELEASE</version>
+</dependency>
+
+<dependency>
+    <groupId>org.springframework</groupId>
+    <artifactId>spring-aspects</artifactId>
+    <version>5.0.2.RELEASE</version>
+</dependency>
+```
+
 ##### Servlet 的启动配置不使用原生 servlet 框架，采用 Spring MVC 框架，详细介绍见 Spring 文档的 Web Servlet 部分。
 
 Spring MVC 不包含在 Spring 的核心组件中，因此，需要添加依赖 ``spring-web`` 和 ``spring-webmvc``。
@@ -341,12 +361,12 @@ Spring MVC 不包含在 Spring 的核心组件中，因此，需要添加依赖 
 ##### 4 web.xml （Tomcat 的 Servlet 启动配置）
 ```xml
 <?xml version="1.0" encoding="UTF-8"?>
-<web-app xmlns="http://java.sun.com/xml/ns/javaee"
+<web-app xmlns="http://xmlns.jcp.org/xml/ns/javaee"
          xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-         xsi:schemaLocation="
-        http://java.sun.com/xml/ns/javaee
-        https://java.sun.com/xml/ns/javaee/web-app_3_0.xsd"
-         version="3.0">
+         xsi:schemaLocation="http://xmlns.jcp.org/xml/ns/javaee
+                      http://xmlns.jcp.org/xml/ns/javaee/web-app_3_1.xsd"
+         version="3.1"
+         metadata-complete="true">
 
   <!-- 配置加载类路径的配置文件 -->
   <context-param>
@@ -396,14 +416,14 @@ Spring MVC 不包含在 Spring 的核心组件中，因此，需要添加依赖 
   </filter-mapping>
 
   <!-- 委派过滤器 -->
-  <filter>
+  <!--<filter>
     <filter-name>springSecurityFilterChain</filter-name>
     <filter-class>org.springframework.web.filter.DelegatingFilterProxy</filter-class>
   </filter>
   <filter-mapping>
     <filter-name>springSecurityFilterChain</filter-name>
     <url-pattern>/*</url-pattern>
-  </filter-mapping>
+  </filter-mapping>-->
 
   <welcome-file-list>
     <welcome-file>index.html</welcome-file>
