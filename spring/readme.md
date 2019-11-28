@@ -476,3 +476,21 @@ index.jsp
 </html>
 ```
 ##### 推荐项目初始化后，将以上内容添加到 web.xml 和 index.jsp。
+
+<br>
+
+# 一个完整 Spring 项目的配置过程
+
+#### 1 对 Servlet 的配置，web.xml
+Spring MVC 也有一个核心的 Servlet，称作 “DispatcherServlet”。 这个 dispatcherServlet 和任何 Servlet 一样，在 web.xml 中声明和映射（mapping）。 当然，也可以使用注解方式，此时就不需要 web.xml 了。
+
+参考 Spring 文档的 Web Servlet 部分，Spring Web MVC -> DispatcherServlet 的介绍进行 web.xml 的配置。
+
+#### 2 基于 Context Hierarchy，配置 spring-mvc.xml
+DispatcherServlet 是通过委托一些特殊的 Bean 对象来完成 request 对象处理，以及 response 的渲染。
+
+参考 Spring 文档的 Web Servlet 部分，Spring Web MVC -> DispatcherServlet -> Context Hierarchy 以及 Special Bean Types 的介绍进行 spring-mvc.xml 的配置。
+
+#### 3 applicationContext.xml 的配置
+
+关于 Spring 的逻辑和 Spring MVC 入门，查看 [../springmvc](../springmvc)。
