@@ -3,60 +3,102 @@
 ##### Spring 的核心内容
 * Spring IoC 配置 （Inversion of Control）
 * Spring AOP （Aspect Oriented Programming）
-* Spring JDBC Template
+* Spring JDBC Template （JDBC标准的实现类）
 * Spring 事务控制
 
 ##### Spring 概述
-官方网站 http://spring.io/ ，Spring 的定位是做一个 java 的 ``full-stack`` 轻量级开源框架，同时提供了视图层方案 SpringMVC，持久层方案 Spring JDBC，以及业务层方案-业务层事务管理等。 另外，还支持开源世界的第三方框架和类库，如 Mybatis 等。
+spring 的定位是做一个 java 的 ``full-stack`` 轻量级开源框架，框架本身提供了视图层方案 Spring MVC，持久层方案 Spring JDBC，以及业务层方案-业务层TransactionManager。同时，它还支持对接开源世界的第三方框架和类库，如 Mybatis 等。 官方网站 http://spring.io/ 。
 
 ##### Spring 的优势
-* 方便解耦，简化开发
+* 方便解耦，简化开发（IOC设计模式）
 * AOP 编程
 * 声明式事务控制
 * 方便的测试模块开发
 
-各种官方教程 http://spring.io/guides
+官方教程
+* 项目搭建教程 http://spring.io/guides
+* spring 产品家族 http://spring.io/projects
 
-各种Spring工程方案 http://spring.io/projects
-
-##### Spring 体系结构
-http://docs.spring.io/spring/docs/4.2.x/spring-framework-reference/html/overview.html
+##### Spring 框架的体系结构
 <div align="center">
 <img src="figures/spring-overview.png" width="50%">
 </div>
 
-* Core IoC (Inversion of Control)
-* AOP
-* DAO
-* Web
-* Test
+* 架构图来源 http://docs.spring.io/spring/docs/4.2.x/spring-framework-reference/html/overview.html
 
-doc 文档 http://docs.spring.io/spring/docs/
+Spring 的核心部分是 Core Container 部分，主要支持 IOC 设计模式的实现，因此才有 Spring 的 xml 配置这一个环境搭建的核心部分。 DataAccess、Web 提供了大量的 MySQL 访问、Servlet 过滤器和监听器的实现代码，数据库访问几乎都不需要写代码了。 AOP 则定义了 Spring 编写业务代码的范式，需要编码人员掌握牢记。
 
-#### 1 IOC 详解
-Inversion of Control 是一种编程/框架设计理念。 初衷是实现程序的解耦，程序编译时，不会由于依赖库的缺失而导致编译失败。（当然，运行是肯定会失败的。编码和编译却不会被影响。）
+官方文档 http://docs.spring.io/spring/docs/
+
+#### IOC 设计模式
+Inversion of Control (IOC) 是一种框架设计理念，其初衷是实现程序的解耦，在程序编译时，不再会因为依赖库的缺失而导致编译的失败。（代码编译不依赖外部类文件。）
+
 ```java
-// private IAccountDao accountDao = new AccountDaoImpl();
-private IAcountDao accountDao = (IAccountDao)BeanFactory.getBean("accountDao");  // IoC 模式
+/**
+ * IOC 设计模式实践
+ */
+private IAccountDao accountDao = new AccountDaoImpl();  // 一般方式
+private IAcountDao accountDao = (IAccountDao)BeanFactory.getBean("accountDao");  // IOC设计模式
 ```
-因此 ，IoC 更应该被理解为 ``“IoC模式”``。
+IOC 设计模式的好处是，类名字符串还可以进一步放置于 xml 配置文件中，实现一套代码多种组合。
 
-控制反转（Inversion of Control，缩写为IoC），是面向对象编程中的一种设计原则。 最常见的实现方式叫做依赖注入（Dependency Injection，简称DI），还有另一种实现方式，叫 “依赖查找”（Dependency Lookup）。
+IOC 设计模式的最常见实现方式，叫做 “依赖注入”（Dependency Injection，DI），此外还有一种实现方式，叫 “依赖查找”（Dependency Lookup）。
 
-#### 2 AOP 概念
-AOP 是 Aspect Oriented Programming 的缩写。 面向切面编程，通过预编译方式和运行期动态代理，实现程序功能的灵活性和可扩展性，AOP 实际是GoF 设计模式的延续。
+#### AOP 设计模式
+AOP 是 Aspect Oriented Programming 的缩写。 面向切面编程，通过预编译方式和运行期动态代理，实现程序功能的灵活性和可扩展性，AOP 也是 GoF 设计模式的延伸。
 
-AOP 的初衷是将日志记录，性能统计，安全控制，事务处理，异常处理等代码从业务逻辑代码中划分出来。
+AOP 的初衷是将日志记录，性能统计，安全控制，事务处理，异常处理等非业务核心代码从业务逻辑代码中划分出来。
 
-##### AOP 与 OOP 的比较
-AOP 与 OOP 是两种不同关注点的设计思想。
-* OOP 针对业务处理过程的实体及其属性和行为进行抽象封装。 （业务 -> 对象）
-* AOP 针对业务处理过程中的 “切面（处理过程中的某个步骤或阶段）” 进行提取。 （切片 -> 对象）
+##### AOP 与 OOP 异同点 （封装 -> 切片）
+* OOP 是对业务处理过程的实体及其属性和行为进行抽象封装。 （具体业务 -> 一个对象）
+* AOP 则是对业务处理过程中的 “切面（处理过程中的某个步骤或阶段）” 进行提取。（动态代理技术）
 
-AOP 是 OOP 的延续，终点都是对象，但是，将什么封装至对象是两者的重大差异。
-
-##### AOP 的技术原理
-动态代理技术
+```java
+/**
+ * AOP 设计模式实践
+ */
+public IAccountService getAccountService() {
+    return (IAccountService)Proxy.newProxyInstance(
+        accountService.getClass().getClassLoader(),
+        accountService.getClass().getInterfaces(),
+        new InvocationHandler() {
+            /**
+            * 添加事务的支持
+            *
+            * @param proxy
+            * @param method
+            * @param args
+            * @return
+            * @throws Throwable
+            */
+            @Override
+            public Object invoke(Object proxy, Method method, Object[] args) throws Trowable {
+                if ("test".equals(method.getName())) {
+                    return method.invoke(accountService, args);
+                }
+                Object rtValue = null;
+                try {
+                    //1. 开启事务
+                    txManager.beginTransaction();
+                    //2. 执行操作
+                    rtValue = method.invoke(accountService, args);
+                    //3. 提交事务
+                    txManager.commit();
+                    //4. 返回结果
+                    return rtValue;
+                } catch (Exception e) {
+                    //5. 回滚操作
+                    txManager.rollback();
+                    throw new RuntimeException(e);
+                } finally {
+                    //6. 释放连接
+                    txManager.release();
+                }
+            }
+      }); // End of return
+}
+```
+为对象添加代理是 AOP 的核心逻辑。
 
 ##### AOP 相关术语
 * Joinpoint （连接点）
@@ -68,104 +110,70 @@ AOP 是 OOP 的延续，终点都是对象，但是，将什么封装至对象�
 * Proxy （代理）
 * Aspect （切面）
 
-```java
-/**
- * 获取 Service 代理对象
- * @return
- */
-public IAccountService getAccountService() {
-    return (IAccountService)Proxy.newProxyInstance(accountService.getClass().getClassLoader(),accountService.getClass().getInterfaces(),
-    new InvocationHandler() {
-        /**
-         * 添加事务的支持
-         *
-         * @param proxy
-         * @param method
-         * @param args
-         * @return
-         * @throws Throwable
-         */
-        @Override
-        public Object invoke(Object proxy, Method method, Object[] args) throws Trowable {
-            if ("test".equals(method.getName())) {
-                return method.invoke(accountService, args);
-            }
-
-            Object rtValue = null;
-            try {
-                //1. 开启事务
-                txManager.beginTransaction();
-                //2. 执行操作
-                rtValue = method.invoke(accountService, args);
-                //3. 提交事务
-                txManager.commit();
-                //4. 返回结果
-                return rtValue;
-            } catch (Exception e) {
-                //5. 回滚操作
-                txManager.rollback();
-                throw new RuntimeException(e);
-            } finally {
-                //6. 释放连接
-                txManager.release();
-            }
-        }
-    });
-}
-```
-仔细琢磨以上代码，感受业务代码和数据库事务代码的结合技巧。
-
-#### 3 Spring AOP 开发的阶段
+#### Spring 代码开发的特点
 * 编写核心业务代码 （开发主线）
 * 公用代码抽取，制作成通知。 （AOP 编程人员）
 * 在配置文件中，声明切入点与通知的关系，即切面。 （AOP 编程人员）
 
 ##### 整个开发阶段，核心和难点是有一双慧眼，去抽取公共代码。
 
-#### 4 Spring 的运行逻辑
-Spring 框架监控切入点方法的执行。 一旦监测到切入点方法被执行，使用代理机制动态创建目标对象的代理对象，在代理对象的对应位置，将通知对应的功能织入，然后完成完整的代码逻辑运行。
+#### Spring 框架的启动逻辑
+后台不断监控切入点方法（Servlet）的执行。 一旦监测到切入点方法被执行，使用代理机制动态创建目标对象的代理对象，在代理对象的对应位置，将通知对应的功能织入，执行。
 
 <br>
 
 # Spring 的 Maven 环境搭建
 
 #### 1 需要的配置文件
-* applicationContext.xml **（Spring 核心配置文件）**
-    * 配置 dao 和 service 依赖
+* applicationContext.xml **（Spring 核心配置文件，Spring 框架启动配置）**
+    * 配置自定义的 dao 和 service 依赖
     * spring 整合 mybatis
-    * 事务配置
-* spring-mvc.xml **（SpringMVC 核心配置文件）**
-    * 配置 web 依赖
-* web.xml **（Maven webapp 核心配置文件）**
+    * 事务管理配置
+* spring-mvc.xml **（SpringMVC 核心配置文件，Servlet 启动配置）**
+    * 配置自定义的 controller 依赖
+    * 配置视图解析器
+    * 配置静态资源过滤要求
+    * 开启 Spring MVC 注解功能
+    * 开启 AOP 注解功能
+* web.xml **（Maven webapp 核心配置文件，Tomcat 启动配置）**
+    * 配置解决中文乱码的过滤器
+    * 配置 welcome-file-list （首页）
+    * 配置 filter 和 listener
+    * 配置 servlet 和 url 映射关系
+    * 其他配置： JSP、security 和 login auth 等。
 
-推荐将配置文件都放置于 maven webapp 项目下。
+注意，整个 Spring 的工程，最终的启动入口都是 web.xml 配置文件，也就是 webapp 项目。其他子工程最终会以 jar 包的形式存在于 webapp 中。
+``因此，所有的 xml 配置文件在创建的时候，就应在 webapp 目录下创建。``
 
 #### 2 创建配置文件
-在 maven webapp 项目下的 src/main 目录下，右键，new -> directory，创建一个名为 java 的目录。
+在 maven webapp 项目的 src/main 目录下，右键，new -> directory，创建一个名为 java 的目录。
 * 在 java 目录上，右键，Mark Directory as -> Source Root。
 * 在 src/main 目录下，创建一个与 java 同级的目录 resources。然后将它标记为 Resources Root。
-* 在 resources 目录中，创建 applicationContext.xml 文件。
-* 在 resources 目录中，创建 spring-mvc.xml 文件。
-* 注意，web.xml 文件在 src/main/webapp/WEB-INF 目录下。
+* 在 resources 目录下，创建 applicationContext.xml 文件。
+* 在 resources 目录下，创建 spring-mvc.xml 文件。
+* web.xml 文件在 webapp 项目创建时已存在于 src/main/webapp/WEB-INF 目录下，不用再去创建了。
 
-#### 3 填写配置文件内容
-##### 1. 在 pom.xml 中添加 spring-context 依赖
-在 http://mvnrepository.com/ ，搜索 spring-context，点击进入，选择 5.0.2 release，点击，内容如下所示。 添加至 pom.xml dependencies 标签内。
+#### 3 spring 项目的 jar 包依赖
+##### 1. 在父项目的 pom.xml 文件中添加 spring-context 依赖
+在 http://mvnrepository.com/ ，搜索 spring-context，点击进入，选择 5.0.2 release，点击，内容如下所示。 添加至 pom.xml 的 \<dependencies> 标签内。
 ```xml
-<dependency>
+<dependencies>
+  <dependency>
     <groupId>org.springframework</groupId>
     <artifactId>spring-context</artifactId>
     <version>5.0.2.RELEASE</version>
-</dependency>
+  </dependency>
+</dependencies>
 ```
 注意，spring 的 context 依赖不是一个简单的依赖，导入之后，自动导入 beans、core、aop、expression、jcl 等核心组件。 （因此，添加这一个依赖就可以认为 spring 基础依赖已配置完成。）
 
-##### 2. spring 配置文件模板
-打开 spring 文档，进入 spring-framework-reference 的 Core Section 内容： http://docs.spring.io/spring/docs/5.0.10.RELEASE/spring-framework-reference/core.html ，Ctrl+F 搜索 “xmls”，就可以搜索各种配置文件的模板了。
+#### 4 配置文件填写
+##### 1. 配置文件的模板
+打开 spring 文档，进入 spring-framework-reference 目录，查看 Core Section 部分内容。 http://docs.spring.io/spring/docs/5.0.10.RELEASE/spring-framework-reference/core.html ，Ctrl+F 搜索 “xmls”，查看各种配置模板。（需要注意的是，Core Section 部分并不包含所有的配置模板，数据库配置、事务配置、Servlet 配置，查看对应的 Section 内容。）
 
-spring 中文文档 http://www.docs4dev.com/docs/zh/spring-framework/5.1.3.RELEASE/reference
+* 中文文档 http://www.docs4dev.com/docs/zh/spring-framework/5.1.3.RELEASE/reference
 
-##### 3 applicatonContext.xml
+##### 2. applicatonContext.xml （配置 Spring 框架启动项）
 ```xml
 <?xml version="1.0" encoding="UTF-8"?>
 <beans xmlns="http://www.springframework.org/schema/beans"
@@ -208,9 +216,9 @@ spring 中文文档 http://www.docs4dev.com/docs/zh/spring-framework/5.1.3.RELEA
 
 </beans>
 ```
-以上包含三部分内容： context（即ioc）、aop、tx（即事务transaction）。
+以上 xml 语法约束包含三部分内容： context（即ioc配置规范）、aop 配置规范、tx（即事务transaction）配置规范。
 
-``导入 spring-context 依赖的时候是不包含 spring-tx 的，请搜索并添加依赖``，如下。
+``导入 spring-context 依赖的时候是不包含 spring-tx 的，请搜索并添加 tx 对应的 jar 包``，如下：
 ```xml
 <dependency>
     <groupId>org.springframework</groupId>
@@ -219,18 +227,18 @@ spring 中文文档 http://www.docs4dev.com/docs/zh/spring-framework/5.1.3.RELEA
 </dependency>
 ```
 
-MyBatis 整合到 Spring 中需要四个依赖： MySQL、MyBatis、MyBatis-Spring，以及一个线程池（dataSource）c3p0。 还有一个 “声明式事务管理” 依赖的 jar 包 spring-jdbc。
+MyBatis 整合到 Spring 中需要四个依赖： MySQL、MyBatis、MyBatis-Spring，以及一个线程池（dataSource）c3p0。 另外，还有一个 “声明式事务管理” 依赖 spring-jdbc。
 ```xml
-<dependency>
-    <groupId>org.mybatis</groupId>
-    <artifactId>mybatis</artifactId>
-    <version>3.5.0</version>
-</dependency>
-
 <dependency>
     <groupId>mysql</groupId>
     <artifactId>mysql-connector-java</artifactId>
     <version>8.0.15</version>
+</dependency>
+
+<dependency>
+    <groupId>org.mybatis</groupId>
+    <artifactId>mybatis</artifactId>
+    <version>3.5.0</version>
 </dependency>
 
 <dependency>
@@ -252,7 +260,7 @@ MyBatis 整合到 Spring 中需要四个依赖： MySQL、MyBatis、MyBatis-Spri
 </dependency>
 ```
 
-注意，在 src/main/resources 目录下，常见一个文件 db.properties。
+特别注意，另外需要在 src/main/resources 目录下，创建一个 db.properties 文件，配置数据库访问的驱动、路径、用户名、密码。
 ```
 jdbc.driver=com.mysql.jdbc.Driver
 jdbc.url=jdbc:mysql://localhost:3306/ssm?useUnicode=true&characterEncoding=utf8
@@ -264,9 +272,7 @@ Spring 与 MyBatis 聚合，参考 http://mybatis.org/spring/zh/getting-started.
 
 Spring 事务管理（Transaction），参考 Spring 文档的 Data Access 部分。
 
-##### 至此，applicationContext.xml 三大核心配置完成。
-
-##### 4 spring-mvc.xml
+##### 3 spring-mvc.xml （通过 mvc 配置 Servlet 启动项）
 ```xml
 <?xml version="1.0" encoding="UTF-8"?>
 <beans xmlns="http://www.springframework.org/schema/beans"
@@ -313,9 +319,11 @@ Spring 事务管理（Transaction），参考 Spring 文档的 Data Access 部�
 
 </beans>
 ```
-Spring MVC 的文档，在 Spring 文档的 Web Servlet 部分。
+以上 xml 语法约束包含： context 配置约束、aop 配置约束、mvc 配置约束。
 
-Spring MVC 的依赖 jar 包有两个： ``spring-web``、``spring-webmvc``。
+##### Servlet 的启动配置不使用原生 servlet 框架，采用 Spring MVC 框架，详细介绍见 Spring 文档的 Web Servlet 部分。
+
+Spring MVC 不包含在 Spring 的核心组件中，因此，需要添加依赖 ``spring-web`` 和 ``spring-webmvc``。
 ```xml
 <dependency>
     <groupId>org.springframework</groupId>
@@ -330,7 +338,7 @@ Spring MVC 的依赖 jar 包有两个： ``spring-web``、``spring-webmvc``。
 </dependency>
 ```
 
-##### 5 web.xml
+##### 4 web.xml （Tomcat 的 Servlet 启动配置）
 ```xml
 <?xml version="1.0" encoding="UTF-8"?>
 <web-app xmlns="http://java.sun.com/xml/ns/javaee"
@@ -355,7 +363,7 @@ Spring MVC 的依赖 jar 包有两个： ``spring-web``、``spring-webmvc``。
     <listener-class>org.springframework.web.context.request.RequestContextListener</listener-class>
   </listener>
 
-  <!-- 前端控制器，加载 classpath:spring-mvc.xml 服务器启动创建 servlet -->
+  <!-- 前端控制器，加载 classpath:spring-mvc.xml，服务器启动时创建 servlet -->
   <servlet>
     <servlet-name>dispatcherServlet</servlet-name>
     <servlet-class>org.springframework.web.servlet.DispatcherServlet</servlet-class>
@@ -364,9 +372,10 @@ Spring MVC 的依赖 jar 包有两个： ``spring-web``、``spring-webmvc``。
       <param-name>contextConfigLocation</param-name>
       <param-value>classpath:spring-mvc.xml</param-value>
     </init-param>
-    <!-- 服务器启动的时候，让 DispatcherServlet 对象创建 -->
+    <!-- 服务器启动的时候，让 DispatcherServlet 对象创建（即创建 Servlet 对象） -->
     <load-on-startup>1</load-on-startup>
   </servlet>
+
   <servlet-mapping>
     <servlet-name>dispatcherServlet</servlet-name>
     <url-pattern>*.do</url-pattern>
@@ -407,11 +416,17 @@ Spring MVC 的依赖 jar 包有两个： ``spring-web``、``spring-webmvc``。
 
 </web-app>
 ```
-参考 Spring 文档的 Web Servlet 部分。
+web.xml 配置的是 Servlet 启动项，由于使用 Spring MVC 替代原生 Servlet 框架，此时做配置，应参考 Spring 文档的 Web Servlet 部分。
+``同时需要注意的是，Spring Boot 与 Spring MVC 遵循不同的初始化顺序，详细信息参阅 Spring Boot 文档。``
 
-#### 注意，web.xml 是这个 webapp 启动的核心，不建议上来就进行复杂配置，因为稍有 bug 就会导致 404 错误。。
+###### WEB 应用中的 classpath 是什么，classpath: 与 classpath*: 有何区别。
+```
+首先，JavaEE 中的 classpath 与系统环境变量中的 classpath 不同。 WEB 应用中的 classpath 专指 WEB-INF/classes 和 WEB-INF/lib。
+▪ [classpath:] 告知 web 容器去 classpath（WEB-INF/classes和WEB-INF/lib） 中去加载指定名称的配置文件，若是有同名文件，则只会加载一个。
+▪ [classpath*:] 告知 web 容器去 classpath（WEB-INF/classes和WEB-INF/lib） 中去加载指定名称的配置文件，若是有同名文件，则全部加载。
+```
 
-##### 渐进式 web.xml + index.jsp 模板
+##### 注意，web.xml 是这个 webapp 启动的核心，不建议上来就进行复杂配置，因为稍有 bug 就会导致 404 错误。。 推荐以下的渐进式 web.xml + index.jsp 模板
 web.xml
 ```xml
 <?xml version="1.0" encoding="UTF-8"?>
