@@ -190,7 +190,7 @@ spring 中文文档 http://www.docs4dev.com/docs/zh/spring-framework/5.1.3.RELEA
 
     <!-- Spring 整合 MyBatis (MyBatis 学习内容) -->
     <context:property-placeholder location="classpath:db.properties"/>
-    <bean id="dataSource" class="org.apache.commons.dbcp2.BasicDataSource">
+    <bean id="dataSource" class="com.mchange.v2.c3p0.ComboPooledDataSource">
         <property name="driverClass" value="${jdbc.driver}"/>
         <property name="jdbcUrl" value="${jdbc.url}"/>
         <property name="user" value="${jdbc.username}"/>
@@ -219,7 +219,7 @@ spring 中文文档 http://www.docs4dev.com/docs/zh/spring-framework/5.1.3.RELEA
 </dependency>
 ```
 
-MyBatis 整合到 Spring 中需要四个依赖： MySQL、MyBatis、MyBatis-Spring，以及一个线程池（dataSource）commons-dbcp。
+MyBatis 整合到 Spring 中需要四个依赖： MySQL、MyBatis、MyBatis-Spring，以及一个线程池（dataSource）c3p0。 还有一个 “声明式事务管理” 依赖的 jar 包 spring-jdbc。
 ```xml
 <dependency>
     <groupId>org.mybatis</groupId>
@@ -240,9 +240,15 @@ MyBatis 整合到 Spring 中需要四个依赖： MySQL、MyBatis、MyBatis-Spri
 </dependency>
 
 <dependency>
-    <groupId>org.apache.commons</groupId>
-    <artifactId>commons-dbcp2</artifactId>
-    <version>2.5.0</version>
+    <groupId>com.mchange</groupId>
+    <artifactId>c3p0</artifactId>
+    <version>0.9.5.2</version>
+</dependency>
+
+<dependency>
+    <groupId>org.springframework</groupId>
+    <artifactId>spring-jdbc</artifactId>
+    <version>5.0.2.RELEASE</version>
 </dependency>
 ```
 
