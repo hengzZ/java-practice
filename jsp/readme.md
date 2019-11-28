@@ -66,8 +66,12 @@ JSP(Java Server Pages) 是 Java **服务器端页面**。 可以理解为，一�
 9. exception                                            异常对象
 ```
 
+#### JSP 教程推荐 http://www.runoob.com/jsp/eclipse-jsp.html
+##### 注意，编写 jsp 页面的时候，特别注意书写规范。 ``<%@ page language="java" contentType="text/html; charset=UTF-8" pageEncoding="UTF-8"%>``，注意后面的 % 的前面不能有空格。 特别注意！！ 否则导致界面无法显示。
 
-## MVC 模式下的服务器端页面技术演进
+<br>
+
+## MVC 模式下的服务器端页面技术 JSP 的演进， EL 和 JSTL 进一步提升 JSP 语法糖
 ##### MVC 模式
 ```
 1. M: Model，模型。 JavaBean
@@ -150,6 +154,8 @@ JSP(Java Server Pages) 是 Java **服务器端页面**。 可以理解为，一�
 5. 练习： 在 request 域中有一个存有 user 对象的 List 集合。 需要使用 jstl + el 将 List 集合数据展示到 jsp 页面的表格 table 中。
 
 ##### JSP 以及 MVC 模式下的服务器端页面技术 JSTL + EL 和 Flask 架构的模板引擎一样。``请对比学习和理解。``
+
+<br>
 
 ## 三层架构
 
