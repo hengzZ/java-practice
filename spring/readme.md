@@ -190,7 +190,7 @@ spring 中文文档 http://www.docs4dev.com/docs/zh/spring-framework/5.1.3.RELEA
 
     <!-- Spring 整合 MyBatis (MyBatis 学习内容) -->
     <context:property-placeholder location="classpath:db.properties"/>
-    <bean id="dataSource" class="线程池java类">
+    <bean id="dataSource" class="org.apache.commons.dbcp2.BasicDataSource">
         <property name="driverClass" value="${jdbc.driver}"/>
         <property name="jdbcUrl" value="${jdbc.url}"/>
         <property name="user" value="${jdbc.username}"/>
@@ -219,7 +219,7 @@ spring 中文文档 http://www.docs4dev.com/docs/zh/spring-framework/5.1.3.RELEA
 </dependency>
 ```
 
-MyBatis 整合到 Spring 中需要三个依赖： MySQL、MyBatis、MyBatis-Spring。
+MyBatis 整合到 Spring 中需要四个依赖： MySQL、MyBatis、MyBatis-Spring，以及一个线程池（dataSource）commons-dbcp。
 ```xml
 <dependency>
     <groupId>org.mybatis</groupId>
@@ -237,6 +237,12 @@ MyBatis 整合到 Spring 中需要三个依赖： MySQL、MyBatis、MyBatis-Spri
     <groupId>org.mybatis</groupId>
     <artifactId>mybatis-spring</artifactId>
     <version>2.0.3</version>
+</dependency>
+
+<dependency>
+    <groupId>org.apache.commons</groupId>
+    <artifactId>commons-dbcp2</artifactId>
+    <version>2.5.0</version>
 </dependency>
 ```
 
