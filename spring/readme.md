@@ -409,3 +409,55 @@ Spring MVC 的依赖 jar 包有两个： ``spring-web``、``spring-webmvc``。
 ```
 参考 Spring 文档的 Web Servlet 部分。
 
+#### 注意，web.xml 是这个 webapp 启动的核心，不建议上来就进行复杂配置，因为稍有 bug 就会导致 404 错误。。
+
+##### 渐进式 web.xml + index.jsp 模板
+web.xml
+```xml
+<?xml version="1.0" encoding="UTF-8"?>
+<web-app xmlns="http://xmlns.jcp.org/xml/ns/javaee"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://xmlns.jcp.org/xml/ns/javaee
+                      http://xmlns.jcp.org/xml/ns/javaee/web-app_3_1.xsd"
+         version="3.1"
+         metadata-complete="true">
+
+  <!-- 解决中文乱码过滤器 -->
+  <filter>
+    <filter-name>characterEncodingFilter</filter-name>
+    <filter-class>org.springframework.web.filter.CharacterEncodingFilter</filter-class>
+    <init-param>
+      <param-name>encoding</param-name>
+      <param-value>UTF-8</param-value>
+    </init-param>
+  </filter>
+  <filter-mapping>
+    <filter-name>characterEncodingFilter</filter-name>
+    <url-pattern>/*</url-pattern>
+  </filter-mapping>
+
+  <welcome-file-list>
+    <welcome-file>index.html</welcome-file>
+    <welcome-file>index.htm</welcome-file>
+    <welcome-file>index.jsp</welcome-file>
+    <welcome-file>default.html</welcome-file>
+    <welcome-file>default.htm</welcome-file>
+    <welcome-file>default.jsp</welcome-file>
+  </welcome-file-list>
+
+</web-app>
+```
+index.jsp
+```html
+<%@ page contentType="text/html;charset=UTF-8" language="java" pageEncoding="UTF-8"%>
+<!DOCTYPE html>
+<html>
+<head>
+</head>
+<body>
+<h2>Hello World!</h2>
+<a href="#">跳转连接</a>
+</body>
+</html>
+```
+##### 推荐项目初始化后，将以上内容添加到 web.xml 和 index.jsp。
