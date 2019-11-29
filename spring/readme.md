@@ -300,6 +300,8 @@ Spring 事务管理（Transaction），参考 Spring 文档的 Data Access 部�
 
     <!-- 配置视图解析器 -->
     <bean id="viewResolver" class="org.springframework.web.servlet.view.InternalResourceViewResolver">
+        <!-- 配置 JSTL 支持（参考 Spring MVC 文档 JSTL 内容），jstl 需要依赖相关 jar 包 -->
+        <property name="viewClass" value="org.springframework.web.servlet.view.JstlView"/>
         <!-- JSP 文件所在目录 -->
         <property name="prefix" value="/pages/"/>
         <!-- 文件的后缀名 -->
@@ -325,6 +327,21 @@ Spring 事务管理（Transaction），参考 Spring 文档的 Data Access 部�
 </beans>
 ```
 以上 xml 语法约束包含： context 配置约束、aop 配置约束、mvc 配置约束。
+
+jstl 的 maven 依赖有两个，如下：
+```xml
+<dependency>
+    <groupId>javax.servlet</groupId>
+    <artifactId>jstl</artifactId>
+    <version>1.2</version>
+</dependency>
+
+<dependency>
+    <groupId>taglibs</groupId>
+    <artifactId>standard</artifactId>
+    <version>1.1.2</version>
+</dependency>
+```
 
 aop 的支持需要两个依赖 ``spring-aop`` 和 ``spring-aspects``。
 ```xml
