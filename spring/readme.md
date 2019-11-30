@@ -531,3 +531,236 @@ DispatcherServlet 是通过委托一些特殊的 Bean 对象来完成 request �
 #### 3 applicationContext.xml 的配置
 
 关于 Spring 的逻辑和 Spring MVC 入门，查看 [../springmvc](../springmvc)。
+
+## Spring 的 log4j 日志配置
+log4j 的依赖包 Apache Log4j （1.x版本）
+```xml
+<dependency>
+    <groupId>log4j</groupId>
+    <artifactId>log4j</artifactId>
+    <version>1.2.17</version>
+</dependency>
+```
+##### 配置
+Spring 默认加载的是 classpath 目录下面的 log4j.properties 文件，如果你的配置文件不是这个名称，需要在 web.xml 中进行配置。
+``此处虽然使用相同名字，但是也可以多此一举地再显示配置一次。``
+
+web.xml （log4j 1.x版本）
+```xml
+<context-param>
+    <param-name>log4jConfigLocation</param-name>
+    <param-value>classpath:log4j.properties</param-value>
+</context-param>
+
+<!-- 设定刷新日志配置文件的时间间隔，这里设置为 10s -->
+<context-param>
+    <param-name>log4jRefreshInterval</param-name>
+    <param-value>10000</param-value>
+</context-param>
+
+<!--需要配置在 ContextLoaderListener之前-->
+<listener>
+    <listener-class>org.springframework.web.util.Log4jConfigListener</listener-class>
+</listener>
+```
+
+注意，org.springframework.web.util.Log4jConfigListener 这个类在 Spring 5.0 及以上版本已废除。新版本推荐使用 log4j2（2.x版本），``此时的配置文件是 log4j2.properties``，依赖包如下：
+```xml
+<dependency>
+    <groupId>org.apache.logging.log4j</groupId>
+    <artifactId>log4j-core</artifactId>
+    <version>2.11.1</version>
+</dependency>
+
+<dependency>
+    <groupId>org.apache.logging.log4j</groupId>
+    <artifactId>log4j-api</artifactId>
+    <version>2.11.1</version>
+</dependency>
+
+<dependency>
+    <groupId>org.apache.logging.log4j</groupId>
+    <artifactId>log4j-web</artifactId>
+    <version>2.11.1</version>
+</dependency>
+```
+
+web.xml （log4j 2.x版本）
+```xml
+<context-param>
+  <param-name>log4jConfigLocation</param-name>
+  <param-value>classpath:log4j2.properties</param-value>
+</context-param>
+
+<!-- 设定刷新日志配置文件的时间间隔，这里设置为 10s -->
+<context-param>
+  <param-name>log4jRefreshInterval</param-name>
+  <param-value>10000</param-value>
+</context-param>
+
+<!--需要配置在 ContextLoaderListener之前-->
+<listener>
+  <listener-class>org.apache.logging.log4j.web.Log4jServletContextListener</listener-class>
+</listener>
+```
+
+##### log4j 的配置文件内容
+##### log4j 包含三个组件，分别是 Logger(记录器)、Appender(输出目的地)、Layout(日志布局)。
+
+配置 Logger 记录器
+```
+log4j.rootLogger = [ level ] , appenderName, appenderName, ...
+其中，
+▫ level 表示日志记录的优先级，由高到低分别为 OFF、FATAL、ERROR、WARN、INFO、DEBUG、ALL或者你定义的级别。
+▫ appenderName 就是指日志输出的目的。（可以灵活地定义日志输出，也可以同时指定多个输出目的地。）
+```
+
+配置 Appender 输出目的地
+```
+# 输出目的地的类型
+org.apache.log4j.ConsoleAppender（控制台）
+org.apache.log4j.FileAppender（文件）
+org.apache.log4j.DailyRollingFileAppender（每天产生一个日志文件）
+org.apache.log4j.RollingFileAppender（文件大小到达指定尺寸的时候产生一个新的文件）
+org.apache.log4j.WriterAppender（将日志信息以流格式发送到任意指定的地方）
+```
+
+配置 layout 日志布局
+```
+org.apache.log4j.HTMLLayout（HTML表格形式）
+org.apache.log4j.SimpleLayout（简单格式的日志，只包括日志信息的级别和指定的信息字符串 ，如:DEBUG - Hello）
+org.apache.log4j.TTCCLayout（日志的格式包括日志产生的时间、线程、类别等等信息）
+org.apache.log4j.PatternLayout（灵活地自定义日志格式）
+# 使用 org.apache.log4j.PatternLayout 来自定义信息格式时，可以使用 ConversionPattern=%-d{yyyy-MM-dd HH:mm:ss} [%c {Num}] [%l] [ %t:%r ] - [ %p ]  %m%n 来格式化信息。
+```
+
+log4j.properties （1.x版本 - 对应 Spring 4 版本）
+```
+### set log levels （注意，此处的 D, E 是自定义级别） ###
+log4j.rootLogger = INFO, D, E
+
+log4j.appender.D = org.apache.log4j.RollingFileAppender
+log4j.appender.D.File =${scheduleProject}WEB-INF/logs/schedule.log
+log4j.appender.D.Append = true
+log4j.appender.D.Threshold = DEBUG
+log4j.appender.D.MaxFileSize = 50000KB
+log4j.appender.D.layout = org.apache.log4j.PatternLayout
+log4j.appender.D.layout.ConversionPattern = %-d{yyyy-MM-dd HH:mm:ss}  [ %t:%r ] - [ %p ]  %m%n
+
+log4j.appender.E = org.apache.log4j.RollingFileAppender
+log4j.appender.E.File = ${scheduleProject}WEB-INF/logs/schedule.log
+log4j.appender.E.Append = true
+log4j.appender.E.Threshold = ERROR
+log4j.appender.E.MaxFileSize = 50000KB
+log4j.appender.E.layout = org.apache.log4j.PatternLayout
+log4j.appender.E.layout.ConversionPattern =%-d{yyyy-MM-dd HH\:mm\:ss}  [ %l\:%c\:%t\:%r ] - [ %p ]  %m%n
+```
+
+log4j2.properties （2.x版本 - 对应 Spring 5.0 及以上）
+```
+status = error
+dest = err
+name = PropertiesConfig
+
+property.filename = ${scheduleProject}/rolling/rollingtest.log
+
+filter.threshold.type = ThresholdFilter
+filter.threshold.level = debug
+
+appender.console.type = Console
+appender.console.name = STDOUT
+appender.console.layout.type = PatternLayout
+appender.console.layout.pattern = %m%n
+appender.console.filter.threshold.type = ThresholdFilter
+appender.console.filter.threshold.level = error
+
+appender.rolling.type = RollingFile
+appender.rolling.name = RollingFile
+appender.rolling.fileName = ${filename}
+appender.rolling.filePattern = ${scheduleProject}/rolling2/test1-%d{MM-dd-yy-HH-mm-ss}-%i.log.gz
+appender.rolling.layout.type = PatternLayout
+appender.rolling.layout.pattern = %d %p %C{1.} [%t] %m%n
+appender.rolling.policies.type = Policies
+appender.rolling.policies.time.type = TimeBasedTriggeringPolicy
+appender.rolling.policies.time.interval = 2
+appender.rolling.policies.time.modulate = true
+appender.rolling.policies.size.type = SizeBasedTriggeringPolicy
+appender.rolling.policies.size.size=100MB
+appender.rolling.strategy.type = DefaultRolloverStrategy
+appender.rolling.strategy.max = 5
+
+logger.rolling.name = com.petersdemo.ssm.web
+logger.rolling.level = debug
+logger.rolling.additivity = false
+logger.rolling.appenderRef.rolling.ref = RollingFile
+
+rootLogger.level = info
+rootLogger.appenderRef.stdout.ref = STDOUT
+```
+
+###### Log4j2 介绍
+```
+Log4j2 配置文件关键节点：
+1. LoggerContext： 日志系统上下文。 （仅是一个抽象概念）
+2. Configuration： 每一个 LoggerContext 仅有一个有效的 Configuration，可以认为就是这个上下文的内容。
+3. Logger： Logger 继承自 AbstractLogger，它与一个 LoggerConfig 相关连，以对自己进行配置。
+4. LoggerConfig： 它包含一组 Appender 引用，以及一组 Appender 需要的 Filter。 （<Configuration> 标签内的整块内容就是 LoggerConfig。）
+5. Appender： 用于指定日志的输出目的地。
+6. Filter： 过滤消息事件。
+7. Layout： 用于自定义日志格式。
+8. StrSubstitutor 和 StrLookup： 用于对 Log4j2 的各项配置项进行动态变量赋值。 （可理解为解析 Log4j2 配置文件）
+9. 日志级别： LoggerConfig 会被分配一个日志级别，trace, debug, info, warn, error 和 fatal。
+另外，为什么 Log4j2 比 Log4j 性能好，就是因为它的分包机制，通过 RollingFile 配置实现。
+```
+以 xml 配置为例 （因为 xml 父子结构清晰）
+```xml
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- 配置 LoggerConfig，即 Appenders 的日志级别为 WARN -->
+<Configuration status="WARN">
+
+    <!-- Appenders 支持配置多个 Appender，支持向不同的目标输送日志，本例为配置向控制台输出 -->
+    <Appenders>
+        <Console name="Console" target="SYSTEM_OUT">
+            <PatternLayout pattern="%d{HH:mm:ss.SSS} [%t] %-5level %logger{36} - %msg%n" />
+        </Console>
+    </Appenders>
+
+    <!-- Loggers 支持配置多个 Logger，可引用不同的目标 Appender，也可根据业务需求定制特定要求的 Appender -->
+    <Loggers>
+        <Root level="info">
+            <AppenderRef ref="Console" />
+        </Root>
+    </Loggers>
+</Configuration>
+```
+
+Log4j 中文教程
+* http://www.docs4dev.com/docs/zh/log4j2/2.x/all （log4j2）
+* http://www.yiibai.com/log4j （log4j）
+
+在尝试配置之前，应先了解 loggers 如何在 Log4j 中工作至关重要。试图在不理解这些概念的情况下配置 Log4j 会导致挫败感。
+http://www.docs4dev.com/docs/zh/log4j2/2.x/all/manual-architecture.html
+
+#### Spring 的日志体系
+
+##### Spring 4 的日志技术实现
+查看 spring-context-4.1.9.jar 包依赖，可以发现 spring4 底层依赖了 commons-logging.jar。
+```
+# spring-context 依赖关系
+ > spring-aop
+ > spring-beans
+ > spring-core
+   > commons-logging
+ > spring-expression
+```
+
+##### Spring 5 的日志技术实现
+```
+# spring-context 依赖关系
+ > spring-aop
+ > spring-beans
+ > spring-core
+   > spring-jcl （Jakarta Commons Logging）
+ > spring-expression
+```
+spring5 中默认是使用 jcl 的接口，它的日志体系更加强大了，通过循环优先机制，优先扫描 log4j2，还可以使用 “slf4j+绑定器” 的方式与市面上各种主流日志框架进行集成。 ``SLF4J 是众多日志系统的内核，提供统一的接口，不提供具体实现。``
