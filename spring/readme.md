@@ -558,10 +558,25 @@ web.xml （log4j 1.x版本）
     <param-value>10000</param-value>
 </context-param>
 
-<!--需要配置在 ContextLoaderListener之前-->
+<!--需要配置在 ContextLoaderListener之前 （记录后端日志）-->
 <listener>
     <listener-class>org.springframework.web.util.Log4jConfigListener</listener-class>
 </listener>
+
+<!-- 放置于 log4j 的 listener 元素之后，log4j2 日志过滤器(记录前端日志) -->
+<filter>
+    <filter-name>log4jServletFilter</filter-name>
+    <filter-class>org.apache.logging.log4j.web.Log4jServletFilter</filter-class>
+</filter>
+<filter-mapping>
+    <filter-name>log4jServletFilter</filter-name>
+    <url-pattern>/*</url-pattern>
+    <dispatcher>REQUEST</dispatcher>
+    <dispatcher>FORWARD</dispatcher>
+    <dispatcher>INCLUDE</dispatcher>
+    <dispatcher>ERROR</dispatcher>
+    <dispatcher>ASYNC</dispatcher>
+</filter-mapping>
 ```
 
 注意，org.springframework.web.util.Log4jConfigListener 这个类在 Spring 5.0 及以上版本已废除。新版本推荐使用 log4j2（2.x版本），``此时的配置文件是 log4j2.properties``，依赖包如下：
@@ -598,10 +613,25 @@ web.xml （log4j 2.x版本）
   <param-value>10000</param-value>
 </context-param>
 
-<!--需要配置在 ContextLoaderListener之前-->
+<!--需要配置在 ContextLoaderListener之前 （记录后端日志） -->
 <listener>
   <listener-class>org.apache.logging.log4j.web.Log4jServletContextListener</listener-class>
 </listener>
+
+<!-- 放置于 log4j 的 listener 元素之后，log4j2 日志过滤器(记录前端日志) -->
+<filter>
+    <filter-name>log4jServletFilter</filter-name>
+    <filter-class>org.apache.logging.log4j.web.Log4jServletFilter</filter-class>
+</filter>
+<filter-mapping>
+    <filter-name>log4jServletFilter</filter-name>
+    <url-pattern>/*</url-pattern>
+    <dispatcher>REQUEST</dispatcher>
+    <dispatcher>FORWARD</dispatcher>
+    <dispatcher>INCLUDE</dispatcher>
+    <dispatcher>ERROR</dispatcher>
+    <dispatcher>ASYNC</dispatcher>
+</filter-mapping>
 ```
 
 ##### log4j 的配置文件内容
@@ -789,3 +819,25 @@ http://www.docs4dev.com/docs/zh/log4j2/2.x/all/manual-architecture.html
  > spring-expression
 ```
 spring5 中默认是使用 jcl 的接口，它的日志体系更加强大了，通过循环优先机制，优先扫描 log4j2，还可以使用 “slf4j+绑定器” 的方式与市面上各种主流日志框架进行集成。 ``SLF4J 是众多日志系统的内核，提供统一的接口，不提供具体实现。``
+
+## Spring MVC 表单提交 400 错误排查
+
+当前台 form 表单中的参数和后台接受的参数类型不一致时，将出现异常，会返回 400 错误。但是。。``400 错误会被 springmvc 默认忽略，难以定位错误原因。`` spring mvc 的 400 错误定位追踪是一个很让人头疼的问题。
+
+##### 为了方便 400 错误排查，请将 springmvc 的日志级别都调成 debug。
+```xml
+<loggers>
+    <logger name="org.springframework.core" level="debug"></logger>
+    <logger name="org.springframework.beans" level="debug"></logger>
+    <logger name="org.springframework.context" level="debug"></logger>
+    <logger name="org.springframework.web" level="debug"></logger>
+    <!-- 建立一个默认的 root 的 logger -->
+    <root level="debug">
+        <appender-ref ref="Console"/>
+        <appender-ref ref="RollingFileInfo"/>
+        <appender-ref ref="RollingFileDebug"/>
+        <appender-ref ref="RollingFileError"/>
+   </root>
+</loggers>
+```
+注意，本方法仅对开发环境的 debug，返回 400 错误本身就应该是避免出现的问题。``注意给前端添加类型一致验证提示功能。``
