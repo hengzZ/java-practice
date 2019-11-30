@@ -589,7 +589,7 @@ web.xml （log4j 2.x版本）
 ```xml
 <context-param>
   <param-name>log4jConfigLocation</param-name>
-  <param-value>classpath:log4j2.properties</param-value>
+  <param-value>classpath:log4j2.xml</param-value>
 </context-param>
 
 <!-- 设定刷新日志配置文件的时间间隔，这里设置为 10s -->
@@ -656,82 +656,107 @@ log4j.appender.E.layout = org.apache.log4j.PatternLayout
 log4j.appender.E.layout.ConversionPattern =%-d{yyyy-MM-dd HH\:mm\:ss}  [ %l\:%c\:%t\:%r ] - [ %p ]  %m%n
 ```
 
-log4j2.properties （2.x版本 - 对应 Spring 5.0 及以上）
-```
-status = error
-dest = err
-name = PropertiesConfig
+log4j2.xml （2.x版本 - 对应 Spring 5.0 及以上） ``注意，可以使用 properties 文件，但是 xml 的层次结构更好。``
+```xml
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- 设置 status=debug 可以查看 log4j 的加载过程，显示的非常详细。
+     如果不知道配置的文件存到了哪里，将 status 从 off 改为 debug 即可查看详细过程。-->
+<configuration status="off">
 
-property.filename = ${scheduleProject}/rolling/rollingtest.log
+  <!-- 指定文件路径 -->
+  <properties>
+    <!-- 设置日志在硬盘上输出的目录 ${log4j:configParentLocation}，
+         使用此查找将日志文件放在相对于 log4j 配置文件的目录中 -->
+    <property name="Log_Home">${web:rootDir}/logs</property>
+  </properties>
 
-filter.threshold.type = ThresholdFilter
-filter.threshold.level = debug
+  <!-- 先定义所有的 appender -->
+  <appenders>
+    <!-- 输出控制台的配置 -->
+    <Console name="Console" target="SYSTEM_OUT">
+      <!-- 输出日志的格式
+           %L:：输出代码中的行号。
+           %M：输出产生日志信息的方法名。-->
+      <!-- "%highlight{%d{HH:mm:ss.SSS} %-5level %logger{36}.%M() @%L - %msg%n}{FATAL=Bright Red, ERROR=Bright Magenta, WARN=Bright Yellow, INFO=Bright Green, DEBUG=Bright Cyan, TRACE=Bright White}" -->
+      <PatternLayout pattern="%d{HH:mm:ss.SSS} %-5level %class{36}.%M @%L :-> %msg%xEx%n"/>
+    </Console>
 
-appender.console.type = Console
-appender.console.name = STDOUT
-appender.console.layout.type = PatternLayout
-appender.console.layout.pattern = %m%n
-appender.console.filter.threshold.type = ThresholdFilter
-appender.console.filter.threshold.level = error
+    <!-- 这个会打印出所有的信息，每次大小超过 size，则这 size 大小的日志会自动存入按年份-月份建立的文件夹下面并进行压缩，作为存档 -->
+    <RollingFile name="RollingFileInfo" fileName="${Log_Home}/info.${date:yyyy-MM-dd}.log" immediateFlush="true" filePattern="${Log_Home}/$${date:yyyy-MM}/info-%d{MM-dd-yyyy}-%i.log.gz">
+      <PatternLayout pattern="%d{yyyy-MM-dd 'at' HH:mm:ss z} %-5level %class{36}.%M @%L :-> %msg%xEx%n"/>
+      <!-- 控制台只输出 level 及以上级别的信息（onMatch），其他的直接拒绝（onMismatch）-->
+      <filters>
+        <ThresholdFilter level="error" onMatch="DENY" onMismatch="NEUTRAL"/>
+        <ThresholdFilter level="info" onMatch="ACCEPT" onMismatch="DENY"/>
+      </filters>
+      <Policies>
+        <TimeBasedTriggeringPolicy modulate="true" interval="1"/>
+        <SizeBasedTriggeringPolicy size="10MB"/>
+      </Policies>
+    </RollingFile>
 
-appender.rolling.type = RollingFile
-appender.rolling.name = RollingFile
-appender.rolling.fileName = ${filename}
-appender.rolling.filePattern = ${scheduleProject}/rolling2/test1-%d{MM-dd-yy-HH-mm-ss}-%i.log.gz
-appender.rolling.layout.type = PatternLayout
-appender.rolling.layout.pattern = %d %p %C{1.} [%t] %m%n
-appender.rolling.policies.type = Policies
-appender.rolling.policies.time.type = TimeBasedTriggeringPolicy
-appender.rolling.policies.time.interval = 2
-appender.rolling.policies.time.modulate = true
-appender.rolling.policies.size.type = SizeBasedTriggeringPolicy
-appender.rolling.policies.size.size=100MB
-appender.rolling.strategy.type = DefaultRolloverStrategy
-appender.rolling.strategy.max = 5
+    <!-- 这个会打印出所有的信息，每次大小超过 size，则这 size 大小的日志会自动存入按年份-月份建立的文件夹下面并进行压缩，作为存档 -->
+    <RollingFile name="RollingFileDebug" fileName="${Log_Home}/debug.${date:yyyy-MM-dd}.log" immediateFlush="true" filePattern="${Log_Home}/$${date:yyyy-MM}/debug-%d{MM-dd-yyyy}-%i.log.gz">
+      <PatternLayout pattern="%d{yyyy-MM-dd 'at' HH:mm:ss z} %-5level %class{36}.%M @%L :-> %msg%xEx%n"/>
+      <filters>
+        <ThresholdFilter level="info" onMatch="DENY" onMismatch="NEUTRAL"/>
+        <ThresholdFilter level="debug" onMatch="ACCEPT" onMismatch="NEUTRAL"/>
+      </filters>
+      <Policies>
+        <TimeBasedTriggeringPolicy modulate="true" interval="1"/>
+        <SizeBasedTriggeringPolicy size="10MB"/>
+      </Policies>
+    </RollingFile>
 
-logger.rolling.name = com.petersdemo.ssm.web
-logger.rolling.level = debug
-logger.rolling.additivity = false
-logger.rolling.appenderRef.rolling.ref = RollingFile
+    <!-- 这个会打印出所有的信息，每次大小超过 size，则这 size 大小的日志会自动存入按年份-月份建立的文件夹下面并进行压缩，作为存档 -->
+    <RollingFile name="RollingFileError" fileName="${Log_Home}/error.${date:yyyy-MM-dd}.log" immediateFlush="true" filePattern="${Log_Home}/$${date:yyyy-MM}/error-%d{MM-dd-yyyy}-%i.log.gz">
+      <PatternLayout pattern="%d{yyyy-MM-dd 'at' HH:mm:ss z} %-5level %class{36}.%M @%L :-> %msg%xEx%n"/>
+      <ThresholdFilter level="error" onMatch="ACCEPT" onMismatch="DENY"/>
+      <Policies>
+        <TimeBasedTriggeringPolicy modulate="true" interval="1"/>
+        <SizeBasedTriggeringPolicy size="10MB"/>
+      </Policies>
+    </RollingFile>
+  </appenders>
 
-rootLogger.level = info
-rootLogger.appenderRef.stdout.ref = STDOUT
+  <!-- 优先级提醒： trace < debug < info < warn < error < fatal -->
+
+  <!-- 现在定义 logger，只有定义了 logger，并引入相应的 appender，appender 才会生效 -->
+  <!-- 过滤掉 spring 和 mybatis 的一些无用的 DEBUG 信息 -->
+  <!-- log4j 的 additivity 属性： additivity 是 “子Logger” 是否继承 “父Logger” 的输出源（appender）的标志位。
+       具体说，默认情况下子Logger会继承父Logger的appender，也就是说子Logger会在父Logger的appender里输出。
+       若是additivity设为false，则子Logger只会在自己的appender里输出，而不会在父Logger的appender里输出。！ -->
+  <!-- <logger name="org" level="INFO" additivity="false" ></logger> -->
+  <!-- <logger name="org.springframework" level="INFO" additivity="false"></logger> -->
+  <!-- <logger name="org.mybatis" level="INFO" additivity="false"></logger> -->
+  <loggers>
+    <logger name="org.springframework.core" level="info"></logger>
+    <logger name="org.springframework.beans" level="info"></logger>
+    <logger name="org.springframework.context" level="info"></logger>
+    <logger name="org.springframework.web" level="info"></logger>
+    <!-- 建立一个默认的 root 的 logger -->
+    <root level="info">
+      <appender-ref ref="Console"/>
+      <appender-ref ref="RollingFileInfo"/>
+      <appender-ref ref="RollingFileDebug"/>
+      <appender-ref ref="RollingFileError"/>
+    </root>
+  </loggers>
+</configuration>
 ```
 
 ###### Log4j2 介绍
 ```
 Log4j2 配置文件关键节点：
 1. LoggerContext： 日志系统上下文。 （仅是一个抽象概念）
-2. Configuration： 每一个 LoggerContext 仅有一个有效的 Configuration，可以认为就是这个上下文的内容。
-3. Logger： Logger 继承自 AbstractLogger，它与一个 LoggerConfig 相关连，以对自己进行配置。
-4. LoggerConfig： 它包含一组 Appender 引用，以及一组 Appender 需要的 Filter。 （<Configuration> 标签内的整块内容就是 LoggerConfig。）
-5. Appender： 用于指定日志的输出目的地。
+2. Configuration： 每一个 LoggerContext 仅有一个有效的 Configuration，是 xml 配置文件的根元素标签。
+3. Logger： Logger 继承自 AbstractLogger，即日志对象。
+4. LoggerConfig： 一组 Appender 的引用，对应 \<appenders> 标签。
+5. Appender： 用于指定日志的输出目的地，一个 appender 就是一个输出目的地。 （\<appenders> 内的子元素）
 6. Filter： 过滤消息事件。
 7. Layout： 用于自定义日志格式。
-8. StrSubstitutor 和 StrLookup： 用于对 Log4j2 的各项配置项进行动态变量赋值。 （可理解为解析 Log4j2 配置文件）
-9. 日志级别： LoggerConfig 会被分配一个日志级别，trace, debug, info, warn, error 和 fatal。
-另外，为什么 Log4j2 比 Log4j 性能好，就是因为它的分包机制，通过 RollingFile 配置实现。
-```
-以 xml 配置为例 （因为 xml 父子结构清晰）
-```xml
-<?xml version="1.0" encoding="UTF-8"?>
-<!-- 配置 LoggerConfig，即 Appenders 的日志级别为 WARN -->
-<Configuration status="WARN">
-
-    <!-- Appenders 支持配置多个 Appender，支持向不同的目标输送日志，本例为配置向控制台输出 -->
-    <Appenders>
-        <Console name="Console" target="SYSTEM_OUT">
-            <PatternLayout pattern="%d{HH:mm:ss.SSS} [%t] %-5level %logger{36} - %msg%n" />
-        </Console>
-    </Appenders>
-
-    <!-- Loggers 支持配置多个 Logger，可引用不同的目标 Appender，也可根据业务需求定制特定要求的 Appender -->
-    <Loggers>
-        <Root level="info">
-            <AppenderRef ref="Console" />
-        </Root>
-    </Loggers>
-</Configuration>
+8. StrSubstitutor 和 StrLookup： 用于对 Log4j2 的各项配置项进行动态变量赋值。（用于支持配置文件内变量定义。）
+9. 日志级别。
 ```
 
 Log4j 中文教程
