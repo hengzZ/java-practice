@@ -841,3 +841,180 @@ spring5 中默认是使用 jcl 的接口，它的日志体系更加强大了，�
 </loggers>
 ```
 注意，本方法仅对开发环境的 debug，返回 400 错误本身就应该是避免出现的问题。``注意给前端添加类型一致验证提示功能。``
+
+<br>
+
+# 订单分页查询 PageHelper
+PageHelper 是国内非常优秀的一款开源的 mybaits 分页插件，支持基本主流且常用的数据库，如 mysql、oracle、mariaDB、DB2、SQLite、Hsqldb 等。
+
+* 项目的 GitHub 地址：http://github.com/pagehelper/Mybatis-PageHelper
+* 项目的 GitOsc 地址：http://gitee.com/free/Mybatis_PageHelper (Gitee，又名 Git OS China。)
+
+maven 依赖环境
+```xml
+<dependency>
+    <groupId>com.github.pagehelper</groupId>
+    <artifactId>pagehelper</artifactId>
+    <version>5.1.2</version>
+</dependency>
+```
+
+#### 使用步骤
+
+##### 配置
+特别注意，新版拦截器是 ``com.github.pagehelper.PageInterceptor``。 ``com.github.pagehelper.PageHelper`` 现在是一个特殊的 ``dialect`` 实现类，是分页插件的默认实现类，提供了和以前相同的用法。
+
+在 Mybatis 配置 xml 中配置拦截器插件 （单独使用 Mybatis 时的用法）
+```xml
+<!--
+    plugins 在配置文件中的位置必须符合要求，否则会报错，顺序如下：
+    properties?, settings?,
+    typeAliases?, typeHandlers?,
+    objectFactory?, objectWrapperFactory?,
+    plugins?,
+    environments?, databaseIdProvider?, mappers?
+ -->
+<plugins>
+    <!-- com.github.pagehelper 为 PageHelper 类所在包名 -->
+    <plugin interceptor="com.github.pagehelper.PageInterceptor">
+        <!-- 使用下面的方式配置参数，后面会有所有的参数介绍 -->
+        <property name="param1" value="value1"/>
+    </plugin>
+</plugins>
+```
+
+在 Spring 配置文件中配置拦截器插件 （Spring 项目中的用法）
+```xml
+<bean id="sqlSessionFactory" class="org.mybatis.spring.SqlSessionFactoryBean">
+    <!-- 注意其他配置 -->
+    <property name="plugins">
+        <array>
+          <bean class="com.github.pagehelper.PageInterceptor">
+            <property name="properties">
+                <!-- 使用下面的方式配置参数，一行配置一个 -->
+                <value>params=value1</value>
+            </property>
+          </bean>
+        </array>
+    </property>
+</bean>
+```
+
+##### Spring 配置实例
+```xml
+<!-- spring 和 mybatis 整合 -->
+<context:property-placeholder location="classpath:db.properties"/>
+<bean id="dataSource" class="com.mchange.v2.c3p0.ComboPooledDataSource">
+    <property name="driverClass" value="${jdbc.driver}"/>
+    <property name="jdbcUrl" value="${jdbc.url}"/>
+    <property name="user" value="${jdbc.username}"/>
+    <property name="password" value="${jdbc.password}"/>
+</bean>
+<bean id="sqlSessionFactory" class="org.mybatis.spring.SqlSessionFactoryBean">
+    <property name="dataSource" ref="dataSource" />
+    <!-- 传入 PageHelper 的插件 -->
+    <property name="plugins">
+        <array>
+            <!-- 传入插件的对象 -->
+            <bean class="com.github.pagehelper.PageInterceptor">
+                <property name="properties">
+                    <props>
+                        <prop key="helperDialect">mysql</prop>
+                        <prop key="reasonable">true</prop>
+                    </props>
+                </property>
+            </bean>
+        </array>
+    </property>
+</bean>
+```
+
+##### 分页插件参数介绍
+* helperDialect 指定 sql 语句使用的方言，即指定使用的数据库名称。
+* offsetAsPageNum 默认值 ``false``。当设置为 ``true`` 时，将 ``RowBounds`` 中的 ``offset`` 参数当作 ``pageNum`` 使用。
+* rowBoundsWithCount 默认值 ``false``。当设置为 ``true`` 时，使用 ``RowBounds`` 分页时会进行 count 查询。
+* pageSizeZero 默认值 ``false``。当设置为 ``true`` 时，如果 ``pageSize=0`` 或 ``RowBounds.limit=0`` 就会查询出全部的结果。
+* reasonable 分页合理化参数，默认值 ``false``。当设置为 ``true`` 时，``pageNum<=0`` 会查询第一页，``pageNum>pages`` 会查询最后一页。 推荐使用 true。
+* params 用于从对象中根据属性名取值。 可以配置 ``pageNum, pageSize, count, pageSizeZero, resonable``，不配置映射的用默认值，默认值为 ``pageNum=pageNum; pageSize=pageSize; count=countSql; reasonable=reasonable; pageSizeZero=pageSizeZero``。
+
+#### 使用示例
+
+##### PageHelper.startPage 静态方法调用（重点）
+```
+//获取第1页，10条内容，默认查询总数count
+PageHelper.startPage(1, 10);
+//紧接着的第一个select方法会被分页
+List<Country> list = countryMapper.selectIf(1);
+```
+
+##### 订单分页查询
+**Dao**
+```java
+public interface IOrdersDao {
+    @Select("select * from orders")
+    @Results({
+            @Result(id=true, property = "id", column = "id"),  //true代表主键
+            @Result(property = "orderNum", column = "orderNum"),
+            @Result(property = "orderTime", column = "orderTime"),
+            @Result(property = "orderStatus", column = "orderStatus"),
+            @Result(property = "payType", column = "payType"),
+            @Result(property = "orderDesc", column = "orderDesc"),
+            @Result(property = "peopleCount", column = "peopleCount"),
+            @Result(property = "product", column = "productId", javaType = Product.class, one = @One(select = "com.petersdemo.ssm.dao.IProductDao.findById")),
+            @Result(property = "member", column = "memberId", javaType = Member.class, one=@One(select = "com.petersdemo.ssm.dao.IMemberDao.findById"))
+    })
+    public List<Orders> findAll() throws Exception;
+}
+```
+**Service**
+```java
+@Override
+public List<Orders> findAllByPage(int page, int pageSize) throws Exception {
+    PageHelper.startPage(page, pageSize);
+    return ordersDao.findAll();
+}
+```
+**Controller**
+```java
+@RequestMapping("/findAllByPage.do")
+public ModelAndView findAllByPage(
+        @RequestParam(name = "page", required = true, defaultValue = "1") int page,
+        @RequestParam(name = "pageSize", required = true, defaultValue = "10") int pageSize
+) throws Exception {
+    ModelAndView mv = new ModelAndView();
+    List<Orders> ordersList = ordersService.findAllByPage(page, pageSize);
+    PageInfo pageInfo = new PageInfo(ordersList);  //PageInfo就是一个分页Bean，可以用它来访问/配置分页参数
+    mv.addObject("pageInfo", pageInfo);
+    mv.setViewName("orders-page-list");
+    return mv;
+}
+```
+**jsp**
+```html
+<%@ page language="java" contentType="text/html;charset=UTF-8" pageEncoding="UTF-8"%>
+<%@ taglib prefix="c" uri="http://java.sun.com/jsp/jstl/core" %>
+<!DOCTYPE html>
+<html>
+<head>
+</head>
+<body>
+
+  <!-- 列表显示 -->
+  <c:forEach items="${pageInfo.list}" var="order">
+      <!-- 获取order的属性值 -->
+      ${order.id}
+      ${order.orderNum}
+  </c:forEach>
+  <!-- /列表显示 -->
+
+  <!-- 分页后的页码 -->
+  <ul>
+      <c:forEach begin="1" end="${pageInfo.pages}" var="pageNum">
+        <li><a href="#">${pageNum}</a></li>
+      </c:forEach>
+  </ul>
+  <!-- /分页后的页码 -->
+
+</body>
+</html>
+```
