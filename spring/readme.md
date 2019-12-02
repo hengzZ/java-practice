@@ -1021,7 +1021,7 @@ public ModelAndView findAllByPage(
 
 <br>
 
-# Spring Security 加密
+# Spring Security 进行登陆认证和密码加密
 Spring Security 中文文档 http://www.docs4dev.com/docs/zh/spring-security/5.1.2.RELEASE/reference
 
 #### Maven 环境配置
@@ -1048,8 +1048,73 @@ Spring Security 中文文档 http://www.docs4dev.com/docs/zh/spring-security/5.1
 </dependency>
 ```
 
-#### 使用 Spring Security 实现加解密
-maven 依赖
+#### Spring Security 进行登陆认证
+
+##### 配置步骤
+第1步，导入 Spring Security 的依赖。
+* security-web
+* security-config
+
+第2步，在 web.xml 中创建 Filter。 （Filter 是 Servlet 请求拦截的核心。）
+```xml
+<!-- spring security 配置文件导入 -->
+<context-param>
+    <param-name>contextConfigLocation</param-name>
+    <param-value>classpath*:spring-security.xml</param-value>
+</context-param>
+<!-- 配置监听器 -->
+<listener>
+    <listener-class>org.springframework.web.context.ContextLoaderListener</listener-class>
+</listener>
+<!-- Spring Security 配置 filter，使用该 filter 需要导入 spring security 依赖 -->
+<filter>
+    <!-- 注意，此处的 filter-name 不可以修改，这个名称是强制约束的。 -->
+    <filter-name>springSecurityFilterChain</filter-name>
+    <filter-class>org.springframework.web.filter.DelegatingFilterProxy</filter-class>
+</filter>
+<filter-mapping>
+    <filter-name>springSecurityFilterChain</filter-name>
+    <url-pattern>/*</url-pattern>
+</filter-mapping>
+```
+
+第3步， spring-security.xml 配置文件配置
+   ```xml
+   <?xml version="1.0" encoding="UTF-8"?>
+   <beans xmlns="http://www.springframework.org/schema/beans"
+       xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+       xmlns:security="http://www.springframework.org/schema/security"
+       xsi:schemaLocation="http://www.springframework.org/schema/beans
+        http://www.springframework.org/schema/beans/spring-beans.xsd
+        http://www.springframework.org/schema/security
+        http://www.springframework.org/schema/security/spring-security.xsd">
+
+    <!-- 指定需要认证的 url 以及认证规则 -->
+    <security:http auto-config="true" use-expressions="false">
+        <!-- intercept-url 定义一个过滤规则，pattern 表示对哪些 url 进行权限控制，access 属性表示在请求对应的 url 时需要什么权限。
+             默认配置时它应该是一个以逗号分隔的角色列表，请求的用户只需拥有其中的一个角色就能成功访问。 -->
+        <security:intercept-url pattern="/**" access="ROLE_USER,ROLE_ADMIN" />
+        <!-- auto-config 配置后，不需要再配置下面信息: <security:form-login /> 定义登陆表单信息，
+             <security:http-basic /> 和 <security:logout /> -->
+    </security:http>
+
+    <security:authentication-manager>
+        <security:authentication-provider>
+            <security:user-service>
+                <security:user name="user" password="{noop}user" authorities="ROLE_USER"/>
+                <security:user name="admin" password="{noop}admin" authorities="ROLE_ADMIN"/>
+            </security:user-service>
+        </security:authentication-provider>
+    </security:authentication-manager>
+
+   </beans>
+   ```
+以上使用 Spring Security 拦截所有 url 并需要用户登陆才可访问，此时还没有添加密码加密功能，是最简单的 Spring Security 认证示例。
+``两个账户： 用户名 user 密码 user 和 用户名 admin 密码 admin``
+
+#### 使用 Spring Security 实现密码加密
+
+maven 依赖如下，web.xml 的配置则和上面登陆认证的配置一样。
 ```xml
 <dependency>
     <groupId>org.springframework.security</groupId>
@@ -1069,7 +1134,7 @@ maven 依赖
     <version>5.0.2.RELEASE</version>
 </dependency>
 ```
-spring-security.xml
+spring-security.xml 配置文件
 ```xml
 <?xml version="1.0" encoding="UTF-8"?>
 <beans xmlns="http://www.springframework.org/schema/beans"
@@ -1080,10 +1145,21 @@ spring-security.xml
         http://www.springframework.org/schema/security
         http://www.springframework.org/schema/security/spring-security.xsd">
 
-    <!-- 自定义的 UserDetailsService 实现类 -->
+    <!-- 指定需要认证的 url 以及认证规则 -->
+    <security:http auto-config="true" use-expressions="false">
+        <!-- intercept-url 定义一个过滤规则，pattern 表示对哪些 url 进行权限控制，access 属性表示在请求对应的 url 时需要什么权限。
+             默认配置时它应该是一个以逗号分隔的角色列表，请求的用户只需拥有其中的一个角色就能成功访问。 -->
+        <security:intercept-url pattern="/**" access="ROLE_USER,ROLE_ADMIN" />
+        <!-- auto-config 配置后，不需要再配置下面信息: <security:form-login /> 定义登陆表单信息，
+             <security:http-basic /> 和 <security:logout /> -->
+    </security:http>
+
+    <!-- 自定义的 UserDetailsService 实现类，是一个扩展了 UserDetailsService 接口的 IUserService 实现类 -->
     <bean id="userService" class="com.petersdemo.ssm.service.impl.UserServiceImpl"/>
 
-    <!-- 此处切换成数据库中的用户名和密码，此时，IUserService 需要 extends UserDetailsService -->
+    <!-- 此处切换成使用数据库中的用户名和密码来认证，此时，IUserService 需要 extends UserDetailsService -->
+    <!-- 由于自定义类扩展了 UserDetailsService 接口，此时在认证时，就会调用实现类的 loadUserByUsername 函数，
+         该函数必须返回一个 UserDetails 对象。 -->
     <security:authentication-manager>
         <security:authentication-provider user-service-ref="userService">
             <!-- 配置加密的方式 -->
@@ -1148,11 +1224,12 @@ public class UserServiceImpl implements IUserService {
 
     @Override
     public void save(UserInfo userInfo) throws Exception {
-        //对密码进行加密处理
+        //对密码进行加密处理 （数据库保存的是加密后的密码）
         userInfo.setPassword(bCryptPasswordEncoder.encode(userInfo.getPassword()));
         userInfoDao.save(userInfo);
     }
 
+    /* Spring Security 登陆认证的时候会使用这个 API 来从数据库查找用户，然后与填写的用户信息对比。 */
     @Override
     public UserDetails loadUserByUsername(String username) throws UsernameNotFoundException {
         UserInfo userInfo = null;
@@ -1167,13 +1244,13 @@ public class UserServiceImpl implements IUserService {
         return user;
     }
 
-    // 作用是返回一个 List 集合，集合中装入的是角色描述。
+    // 作用是返回一个 List 集合，集合中装入的是角色描述。 （总之就是获取用户对应的角色名，一般从 user_role 中间表查询）
     // public List<SimpleGrantedAuthority> getAuthorities(List<Role> roles) {
     // }
 
     /**
-     * 上面的 getAuthorities 方法的一个省略实现，Spring Security 配置和测试使用。
-     * 获取用户的角色权限,为了降低实验的难度，这里去掉了根据用户名获取角色的步骤
+     * 该方法是上面的 getAuthorities 方法的省事实现，仅为了 Spring Security 的配置和测试。
+     * 获取用户的角色权限，为了降低实验的难度，这里去掉了根据用户名获取角色的步骤，就不从数据库中查了。
      * @param - NULL
      * @return - List<SimpleGrantedAuthority>
      */
@@ -1185,7 +1262,8 @@ public class UserServiceImpl implements IUserService {
     }
 }
 ```
-单独使用 BCryptPasswordEncoder 的话，如下所示：
+
+##### 如果单独使用 BCryptPasswordEncoder 对密码加密的话，如下所示：
 ```java
 package com.petersdemo.ssm.utils;
 
@@ -1209,20 +1287,24 @@ public class BCryptPasswordEncoderUtils {
 ```
 
 #### Spring Security 的用户认证逻辑
+
 Spring Security 提供的认证策略
 * 内存用户存储库，即显示的配置在spring配置文件中。
-* 基于jdbc的用户存储库
-* 基于LDAP的用户存储库
+* 基于 jdbc 的用户存储库
+* 基于 LDAP 的用户存储库
 * OpenID 分散式用户身份识别系统
 * 中心认证服务(CAS)
-* X.509证书
-* 基于JAAS的提供者
+* X.509 证书
+* 基于 JAAS 的提供者
 
 下面主要介绍一下：基于内存用户存储库 和 基于jdbc的用户存储库 的方式。 其他方式，参阅 Spring Security 的认证章节。
 
 ##### 基于内存用户存储库的认证
+
 首先，建立一个用户服务，配置所有的用户和它的权限信息。然后，交给认证管理器管理，认证管理器会将认证的任务交给一个或多个认证提供者。
-spring-security.xml
+``spring security 的依赖包导入和 web.xml 配置，参考前面的登陆认证如何配置。``
+
+spring-security.xml 配置
 ```xml
 <?xml version="1.0" encoding="UTF-8"?>
 <beans xmlns="http://www.springframework.org/schema/beans"
@@ -1233,10 +1315,19 @@ spring-security.xml
         http://www.springframework.org/schema/security
         http://www.springframework.org/schema/security/spring-security.xsd">
 
-    <!-- 基于 In-Memory 身份验证 -->
+    <!-- 指定需要认证的 url 以及认证规则 -->
+    <security:http auto-config="true" use-expressions="false">
+        <!-- intercept-url 定义一个过滤规则，pattern 表示对哪些 url 进行权限控制，access 属性表示在请求对应的 url 时需要什么权限。
+             默认配置时它应该是一个以逗号分隔的角色列表，请求的用户只需拥有其中的一个角色就能成功访问。 -->
+        <security:intercept-url pattern="/**" access="user,admin" />
+        <!-- auto-config 配置后，不需要再配置下面信息: <security:form-login /> 定义登陆表单信息，
+             <security:http-basic /> 和 <security:logout /> -->
+    </security:http>
+
+    <!-- 基于 In-Memory 身份验证，注意，此时的密码分别是 root 和 peter 加密后的密码！ -->
     <security:user-service id="userService">
-        <security:user name="root" password="root" authorities="admin"/>
-        <security:user name="peter" password="123456" authorities="user"/>
+        <security:user name="root" password="$2a$10$MxlnDFAUb.ow5flfNZJ0uOOrEhySKXqDIr4VM7nVy5OKkTscbfSTu" authorities="admin"/>
+        <security:user name="peter" password="$2a$10$s4ZDfRhICld6azP.3H9/0uzvX/zJUaVJXSEabHlxO9r7HK6JkI1ye" authorities="user"/>
     </security:user-service>
 
     <!-- 切换成 In-Memory 的用户名和密码 -->
@@ -1254,7 +1345,8 @@ spring-security.xml
 ```
 
 ##### 基于 JDBC 的身份验证
-下面的 example 假定您已在 application 中定义了 DataSource。 此时，userService 的定义使用 \<security:jdbc-user-service>。
+
+下面的 example 假定您已在 application 中定义了 DataSource。 此时，userService 的定义使用 ``<security:jdbc-user-service>``。
 ```xml
 <?xml version="1.0" encoding="UTF-8"?>
 <beans xmlns="http://www.springframework.org/schema/beans"
@@ -1265,7 +1357,16 @@ spring-security.xml
         http://www.springframework.org/schema/security
         http://www.springframework.org/schema/security/spring-security.xsd">
 
-    <!-- 基于 JDBC 身份验证 -->
+    <!-- 指定需要认证的 url 以及认证规则 -->
+    <security:http auto-config="true" use-expressions="false">
+        <!-- intercept-url 定义一个过滤规则，pattern 表示对哪些 url 进行权限控制，access 属性表示在请求对应的 url 时需要什么权限。
+             默认配置时它应该是一个以逗号分隔的角色列表，请求的用户只需拥有其中的一个角色就能成功访问。 -->
+        <security:intercept-url pattern="/**" access="user,admin" />
+        <!-- auto-config 配置后，不需要再配置下面信息: <security:form-login /> 定义登陆表单信息，
+             <security:http-basic /> 和 <security:logout /> -->
+    </security:http>
+
+    <!-- 基于 JDBC 身份验证，通过指定的 sql 语句在认证时自动读取数据库，然后认证。 -->
     <security:jdbc-user-service id="userService" data-source-ref="dataSource"
                                 users-by-username-query="select username,password,status from users where username=?"
                                 authorities-by-username-query="select username, role from user_role where username=?"/>
@@ -1284,14 +1385,15 @@ spring-security.xml
 </beans>
 ```
 
-##### 基于 UserDetailsService 的认证
+##### 基于 UserDetailsService 的认证 （实现 UserDetailService 接口，来自定义认证过程）
+
 Spring Security 中进行身份验证的是 AuthenticationManager 接口，ProviderManager 是它的一个默认实现，但它并不用来处理身份认证，而是委托给配置好的 AuthenticationProvider，每个 AuthenticationProvider 会轮流检查身份认证。 检查后或者返回Authentication对象或者抛出异常。
 
-所谓验证身份，就是加载响应的 UserDetails，看看是否和用户输入的账号、密码、权限等信息匹配。 此步骤由实现 AuthenticationProvider 的 DaoAuthenticationProvider（它利用 UserDetailsService 验证用户名、密码和授权）处理。
+所谓验证身份，核心就是得到一个 UserDetails 对象（从内存获取或读数据库获取），拿它和用户输入的账号、密码、权限等信息匹配。 此步骤由实现 AuthenticationProvider 的 DaoAuthenticationProvider（它利用 UserDetailsService 验证用户名、密码和授权）处理。
 
-下面，将自定义一个 UserDetailsService 的实现类来自定义身份验证。下面的 example，将自定义身份验证，假设 IUserService 扩展实现 UserDetailsService。
+下面，我们自定义一个 UserDetailsService 的实现类，来自定义身份验证过程。下面的 example，将自定义身份验证，假设 IUserService 扩展自 UserDetailsService 接口。
 
-spring-security.xml
+spring-security.xml 配置
 ```xml
 <?xml version="1.0" encoding="UTF-8"?>
 <beans xmlns="http://www.springframework.org/schema/beans"
@@ -1302,10 +1404,20 @@ spring-security.xml
         http://www.springframework.org/schema/security
         http://www.springframework.org/schema/security/spring-security.xsd">
 
-    <!-- 自定义的 UserDetailsService 实现类 -->
+    <!-- 指定需要认证的 url 以及认证规则 -->
+    <security:http auto-config="true" use-expressions="false">
+        <!-- intercept-url 定义一个过滤规则，pattern 表示对哪些 url 进行权限控制，access 属性表示在请求对应的 url 时需要什么权限。
+             默认配置时它应该是一个以逗号分隔的角色列表，请求的用户只需拥有其中的一个角色就能成功访问。 -->
+        <security:intercept-url pattern="/**" access="ROLE_USER,ROLE_ADMIN" />
+        <!-- auto-config 配置后，不需要再配置下面信息: <security:form-login /> 定义登陆表单信息，
+             <security:http-basic /> 和 <security:logout /> -->
+    </security:http>
+
+    <!-- 自定义的 UserDetailsService 实现类，是一个扩展了 UserDetailsService 接口的 IUserService 实现类 -->
     <bean id="userService" class="com.petersdemo.ssm.service.impl.UserServiceImpl"/>
 
-    <!-- 切换成数据库中的用户名和密码，此时，IUserService 需要 extends UserDetailsService -->
+    <!-- 由于自定义类扩展了 UserDetailsService 接口，此时在认证时，就会调用实现类的 loadUserByUsername 函数，
+         该函数必须返回一个 UserDetails 对象。 -->
     <security:authentication-manager>
         <security:authentication-provider user-service-ref="userService">
             <!-- 配置加密的方式 -->
@@ -1389,12 +1501,13 @@ public class UserServiceImpl implements IUserService {
         return user;
     }
 
-    //作用是返回一个 List 集合，集合中装入的是角色描述
-    /*public List<SimpleGrantedAuthority> getAuthorities(List<Role> roles) {
-    }*/
+    // 作用是返回一个 List 集合，集合中装入的是角色描述。 （总之就是获取用户对应的角色名，一般从 user_role 中间表查询）
+    // public List<SimpleGrantedAuthority> getAuthorities(List<Role> roles) {
+    // }
 
     /**
-     * 获取用户的角色权限,为了降低实验的难度，这里去掉了根据用户名获取角色的步骤
+     * 该方法是上面的 getAuthorities 方法的省事实现，仅为了 Spring Security 的配置和测试。
+     * 获取用户的角色权限，为了降低实验的难度，这里去掉了根据用户名获取角色的步骤，就不从数据库中查了。
      * @param - NULL
      * @return - List<SimpleGrantedAuthority>
      */
@@ -1406,7 +1519,7 @@ public class UserServiceImpl implements IUserService {
     }
 }
 ```
-注意，强制要求自定义的 Service 接口扩展自 Spring Security 的 ``UserDetailsService`` 接口，是为了使用 ``loadUserByUsername`` API 来和框架的登陆认证系统对接。
+注意，强制要求自定义的 Service 接口扩展自 Spring Security 的 ``UserDetailsService`` 接口，是为了使用 ``loadUserByUsername`` API 来和框架的登陆认证系统对接，对接方式就是返回一个 UserDetails 对象，内部含有用户名、密码、状态和角色名称。
 
 #### Spring Security 的所有项目模块
 1. 核心 - spring-security-core.jar
@@ -1477,3 +1590,11 @@ public class UserServiceImpl implements IUserService {
     ```
     支持使用 Spring Security 进行测试。
     ```
+
+##### 使用自定义的 login 页面完成 Spring Security 的登陆认证
+1. 导入 Spring Security 的依赖，同上。
+2. web.xml 中创建 Filter，同上。
+3. spring-security.xml 配置文件配置
+   ```xml
+
+   ```
