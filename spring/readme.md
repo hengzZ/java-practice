@@ -1018,3 +1018,456 @@ public ModelAndView findAllByPage(
 </body>
 </html>
 ```
+
+<br>
+
+# Spring Security 加密
+Spring Security 中文文档 http://www.docs4dev.com/docs/zh/spring-security/5.1.2.RELEASE/reference
+
+#### Maven 环境配置
+在没有 Spring Boot 的情况下使用 Spring Security 时，首选方法是利用 Spring Security 的 BOM 来确保整个项目中使用 Spring Security 的一致 version。
+```xml
+<dependency>
+    <groupId>org.springframework.security</groupId>
+    <artifactId>spring-security-bom</artifactId>
+    <version>5.0.2.RELEASE</version>
+</dependency>
+```
+最小的 Spring Security Maven 依赖项集通常如下所示：
+```xml
+<dependency>
+    <groupId>org.springframework.security</groupId>
+    <artifactId>spring-security-web</artifactId>
+    <version>5.0.2.RELEASE</version>
+</dependency>
+
+<dependency>
+    <groupId>org.springframework.security</groupId>
+    <artifactId>spring-security-config</artifactId>
+    <version>5.0.12.RELEASE</version>
+</dependency>
+```
+
+#### 使用 Spring Security 实现加解密
+maven 依赖
+```xml
+<dependency>
+    <groupId>org.springframework.security</groupId>
+    <artifactId>spring-security-web</artifactId>
+    <version>5.0.2.RELEASE</version>
+</dependency>
+
+<dependency>
+    <groupId>org.springframework.security</groupId>
+    <artifactId>spring-security-config</artifactId>
+    <version>5.0.12.RELEASE</version>
+</dependency>
+
+<dependency>
+    <groupId>org.springframework.security</groupId>
+    <artifactId>spring-security-crypto</artifactId>
+    <version>5.0.2.RELEASE</version>
+</dependency>
+```
+spring-security.xml
+```xml
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+       xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+       xmlns:security="http://www.springframework.org/schema/security"
+       xsi:schemaLocation="http://www.springframework.org/schema/beans
+        http://www.springframework.org/schema/beans/spring-beans.xsd
+        http://www.springframework.org/schema/security
+        http://www.springframework.org/schema/security/spring-security.xsd">
+
+    <!-- 此处切换成数据库中的用户名和密码，此时，IUserService 需要 extends UserDetailsService -->
+    <security:authentication-manager>
+        <security:authentication-provider user-service-ref="userService">
+            <!-- 配置加密的方式 -->
+            <security:password-encoder ref="passwordEncoder"/>
+        </security:authentication-provider>
+    </security:authentication-manager>
+
+    <!-- 配置加密类 -->
+    <bean id="passwordEncoder" class="org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder"/>
+
+</beans>
+```
+IUserService
+```java
+package com.petersdemo.ssm.service;
+
+import com.petersdemo.ssm.domain.UserInfo;
+import org.springframework.security.core.userdetails.UserDetailsService;
+
+import java.util.List;
+
+/* 注意，IUserService 接口必须扩展自 UserDetailsService */
+public interface IUserService extends UserDetailsService {
+
+    public List<UserInfo> findAll() throws Exception;
+
+    public void save(UserInfo userInfo) throws Exception;
+}
+```
+UserServiceImpl
+```java
+package com.petersdemo.ssm.service.impl;
+
+import com.petersdemo.ssm.dao.IUserInfoDao;
+import com.petersdemo.ssm.domain.UserInfo;
+import com.petersdemo.ssm.service.IUserService;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.core.authority.SimpleGrantedAuthority;
+import org.springframework.security.core.userdetails.User;
+import org.springframework.security.core.userdetails.UserDetails;
+import org.springframework.security.core.userdetails.UsernameNotFoundException;
+import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
+import java.util.ArrayList;
+import java.util.List;
+
+@Service()
+@Transactional
+public class UserServiceImpl implements IUserService {
+
+    @Autowired
+    private IUserInfoDao userInfoDao;
+    @Autowired
+    private BCryptPasswordEncoder bCryptPasswordEncoder;
+
+    @Override
+    public List<UserInfo> findAll() throws Exception {
+        return userInfoDao.findAll();
+    }
+
+    @Override
+    public void save(UserInfo userInfo) throws Exception {
+        //对密码进行加密处理
+        userInfo.setPassword(bCryptPasswordEncoder.encode(userInfo.getPassword()));
+        userInfoDao.save(userInfo);
+    }
+
+    @Override
+    public UserDetails loadUserByUsername(String username) throws UsernameNotFoundException {
+        UserInfo userInfo = null;
+        try {
+            userInfo = userInfoDao.findByUsername(username);
+        }
+        catch (Exception e) {
+            e.printStackTrace();
+        }
+        //处理自己的用户对象，然后封装成 UserDetails，此处省略了角色权限的查询
+        User user = new User(userInfo.getUsername(), userInfo.getPassword(), userInfo.getStatus() == 0 ? false : true, true, true, true, getAuthorities());
+        return user;
+    }
+
+    // 作用是返回一个 List 集合，集合中装入的是角色描述。
+    // public List<SimpleGrantedAuthority> getAuthorities(List<Role> roles) {
+    // }
+
+    /**
+     * 上面的 getAuthorities 方法的一个省略实现，Spring Security 配置和测试使用。
+     * 获取用户的角色权限,为了降低实验的难度，这里去掉了根据用户名获取角色的步骤
+     * @param - NULL
+     * @return - List<SimpleGrantedAuthority>
+     */
+    private List<SimpleGrantedAuthority> getAuthorities(){
+        List<SimpleGrantedAuthority> authList = new ArrayList<SimpleGrantedAuthority>();
+        authList.add(new SimpleGrantedAuthority("ROLE_USER"));
+        authList.add(new SimpleGrantedAuthority("ROLE_ADMIN"));
+        return authList;
+    }
+}
+```
+单独使用 BCryptPasswordEncoder 的话，如下所示：
+```java
+package com.petersdemo.ssm.utils;
+
+import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
+
+public class BCryptPasswordEncoderUtils {
+
+    private static BCryptPasswordEncoder bCryptPasswordEncoder = new BCryptPasswordEncoder();
+
+    public static String encodePassword(String password) {
+        return bCryptPasswordEncoder.encode(password);
+    }
+
+    //测试用
+    public static void main(String args[]) {
+        String password = "123";
+        String pwd = encodePassword(password);
+        System.out.println(pwd);
+    }
+}
+```
+
+#### Spring Security 的用户认证逻辑
+Spring Security 提供的认证策略
+* 内存用户存储库，即显示的配置在spring配置文件中。
+* 基于jdbc的用户存储库
+* 基于LDAP的用户存储库
+* OpenID 分散式用户身份识别系统
+* 中心认证服务(CAS)
+* X.509证书
+* 基于JAAS的提供者
+
+下面主要介绍一下：基于内存用户存储库 和 基于jdbc的用户存储库 的方式。 其他方式，参阅 Spring Security 的认证章节。
+
+##### 基于内存用户存储库的认证
+首先，建立一个用户服务，配置所有的用户和它的权限信息。然后，交给认证管理器管理，认证管理器会将认证的任务交给一个或多个认证提供者。
+spring-security.xml
+```xml
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+       xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+       xmlns:security="http://www.springframework.org/schema/security"
+       xsi:schemaLocation="http://www.springframework.org/schema/beans
+        http://www.springframework.org/schema/beans/spring-beans.xsd
+        http://www.springframework.org/schema/security
+        http://www.springframework.org/schema/security/spring-security.xsd">
+
+    <!-- 基于 In-Memory 身份验证 -->
+    <security:user-service id="userService">
+        <security:user name="root" password="root" authorities="admin"/>
+        <security:user name="peter" password="123456" authorities="user"/>
+    </security:user-service>
+
+    <!-- 切换成 In-Memory 的用户名和密码 -->
+    <security:authentication-manager>
+        <security:authentication-provider user-service-ref="userService">
+            <!-- 配置加密的方式 -->
+            <security:password-encoder ref="passwordEncoder"/>
+        </security:authentication-provider>
+    </security:authentication-manager>
+
+    <!-- 配置加密类 -->
+    <bean id="passwordEncoder" class="org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder"/>
+
+</beans>
+```
+
+##### 基于 JDBC 的身份验证
+下面的 example 假定您已在 application 中定义了 DataSource。 此时，userService 的定义使用 \<security:jdbc-user-service>。
+```xml
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+       xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+       xmlns:security="http://www.springframework.org/schema/security"
+       xsi:schemaLocation="http://www.springframework.org/schema/beans
+        http://www.springframework.org/schema/beans/spring-beans.xsd
+        http://www.springframework.org/schema/security
+        http://www.springframework.org/schema/security/spring-security.xsd">
+
+    <!-- 基于 JDBC 身份验证 -->
+    <security:jdbc-user-service id="userService" data-source-ref="dataSource"
+                                users-by-username-query="select username,password,status from users where username=?"
+                                authorities-by-username-query="select username, role from user_role where username=?"/>
+
+    <!-- 切换成 JDBC 查询用户名和密码 -->
+    <security:authentication-manager>
+        <security:authentication-provider user-service-ref="userService">
+            <!-- 配置加密的方式 -->
+            <security:password-encoder ref="passwordEncoder"/>
+        </security:authentication-provider>
+    </security:authentication-manager>
+
+    <!-- 配置加密类 -->
+    <bean id="passwordEncoder" class="org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder"/>
+
+</beans>
+```
+
+##### 基于 UserDetailsService 的认证
+Spring Security 中进行身份验证的是 AuthenticationManager 接口，ProviderManager 是它的一个默认实现，但它并不用来处理身份认证，而是委托给配置好的 AuthenticationProvider，每个 AuthenticationProvider 会轮流检查身份认证。 检查后或者返回Authentication对象或者抛出异常。
+
+所谓验证身份，就是加载响应的 UserDetails，看看是否和用户输入的账号、密码、权限等信息匹配。 此步骤由实现 AuthenticationProvider 的 DaoAuthenticationProvider（它利用 UserDetailsService 验证用户名、密码和授权）处理。
+
+下面，将自定义一个 UserDetailsService 的实现类来自定义身份验证。下面的 example，将自定义身份验证，假设 IUserService 扩展实现 UserDetailsService。
+
+spring-security.xml
+```xml
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+       xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+       xmlns:security="http://www.springframework.org/schema/security"
+       xsi:schemaLocation="http://www.springframework.org/schema/beans
+        http://www.springframework.org/schema/beans/spring-beans.xsd
+        http://www.springframework.org/schema/security
+        http://www.springframework.org/schema/security/spring-security.xsd">
+
+    <!-- 切换成数据库中的用户名和密码，此时，IUserService 需要 extends UserDetailsService -->
+    <security:authentication-manager>
+        <security:authentication-provider user-service-ref="userService">
+            <!-- 配置加密的方式 -->
+            <security:password-encoder ref="passwordEncoder"/>
+        </security:authentication-provider>
+    </security:authentication-manager>
+
+    <!-- 配置加密类 -->
+    <bean id="passwordEncoder" class="org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder"/>
+
+</beans>
+```
+IUserService
+```java
+package com.petersdemo.ssm.service;
+
+import com.petersdemo.ssm.domain.UserInfo;
+import org.springframework.security.core.userdetails.UserDetailsService;
+
+import java.util.List;
+
+/* 注意，IUserService 接口必须扩展自 UserDetailsService */
+public interface IUserService extends UserDetailsService {
+
+    public List<UserInfo> findAll() throws Exception;
+
+    public void save(UserInfo userInfo) throws Exception;
+}
+```
+UserServiceImpl
+```java
+package com.petersdemo.ssm.service.impl;
+
+import com.petersdemo.ssm.dao.IUserInfoDao;
+import com.petersdemo.ssm.domain.UserInfo;
+import com.petersdemo.ssm.service.IUserService;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.core.authority.SimpleGrantedAuthority;
+import org.springframework.security.core.userdetails.User;
+import org.springframework.security.core.userdetails.UserDetails;
+import org.springframework.security.core.userdetails.UsernameNotFoundException;
+import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
+import java.util.ArrayList;
+import java.util.List;
+
+@Service()
+@Transactional
+public class UserServiceImpl implements IUserService {
+
+    @Autowired
+    private IUserInfoDao userInfoDao;
+    @Autowired
+    private BCryptPasswordEncoder bCryptPasswordEncoder;
+
+    @Override
+    public List<UserInfo> findAll() throws Exception {
+        return userInfoDao.findAll();
+    }
+
+    @Override
+    public void save(UserInfo userInfo) throws Exception {
+        //对密码进行加密处理
+        userInfo.setPassword(bCryptPasswordEncoder.encode(userInfo.getPassword()));
+        userInfoDao.save(userInfo);
+    }
+
+    @Override
+    public UserDetails loadUserByUsername(String username) throws UsernameNotFoundException {
+        UserInfo userInfo = null;
+        try {
+            userInfo = userInfoDao.findByUsername(username);
+        }
+        catch (Exception e) {
+            e.printStackTrace();
+        }
+        //处理自己的用户对象，然后封装成 UserDetails，此处省略了角色权限的查询
+        User user = new User(userInfo.getUsername(), userInfo.getPassword(), userInfo.getStatus() == 0 ? false : true, true,true,true, getAuthorities());
+        return user;
+    }
+
+    //作用是返回一个 List 集合，集合中装入的是角色描述
+    /*public List<SimpleGrantedAuthority> getAuthorities(List<Role> roles) {
+    }*/
+
+    /**
+     * 获取用户的角色权限,为了降低实验的难度，这里去掉了根据用户名获取角色的步骤
+     * @param - NULL
+     * @return - List<SimpleGrantedAuthority>
+     */
+    private List<SimpleGrantedAuthority> getAuthorities(){
+        List<SimpleGrantedAuthority> authList = new ArrayList<SimpleGrantedAuthority>();
+        authList.add(new SimpleGrantedAuthority("ROLE_USER"));
+        authList.add(new SimpleGrantedAuthority("ROLE_ADMIN"));
+        return authList;
+    }
+}
+```
+注意，强制要求自定义的 Service 接口扩展自 Spring Security 的 ``UserDetailsService`` 接口，是为了使用 ``loadUserByUsername`` API 来和框架的登陆认证系统对接。
+
+#### Spring Security 的所有项目模块
+1. 核心 - spring-security-core.jar
+   ```
+   包含核心身份验证和 access-contol classes 和接口，远程支持和基本配置 API。
+   任何使用 Spring Security 的 application 都需要。
+   包含 top-level 包：
+   * org.springframework.security.core
+   * org.springframework.security.access
+   * org.springframework.security.authentication
+   * org.springframework.security.provisioning
+   ```
+2. Remoting - spring-security-remoting.jar
+   ```
+   提供与 Spring Remoting 的整合。
+   除非您正在编写使用 Spring Remoting 的 remote client，否则您不需要这样做。
+   ```
+3. Web - spring-security-web.jar
+   ```
+   包含过滤器和相关的 web-security infrastructure code。任何具有 servlet API 依赖性的东西。
+   如果您需要 Spring Security web 身份验证服务和 URL-based access-control，则需要它。
+   ```
+4. 配置 - spring-security-config.jar
+   ```
+   包含解析 code 和 Java configuration code 的安全名称空间。
+   如果您使用 Spring Security XML 命名空间进行 configuration 或 Spring Security 的 Java Configuration 支持，则需要它。
+   ```
+5. LDAP - spring-security-ldap.jar
+   ```
+   LDAP 身份验证和配置 code。
+   如果您需要使用 LDAP 身份验证或管理 LDAP 用户条目，则为必需。
+   ```
+6. OAuth 2.0 核心 - spring-security-oauth2-core.jar
+   ```
+   为 OAuth 2.0 Authorization Framework 和 OpenID Connect Core 1.0 提供支持。
+   使用 OAuth 2.0 或 OpenID Connect Core 1.0 的 applications 需要它。
+   ```
+7. OAuth 2.0 Client - spring-security-oauth2-client.jar
+   ```
+   Spring Security 的 client 支持 OAuth 2.0 授权 Framework 和
+   OpenID Connect Core 1.0. applications 利用 OAuth 2.0 登录 and/or OAuth Client 支持。
+   ```
+8. OAuth 2.0 JOSE - spring-security-oauth2-jose.jar
+   ```
+   包含 Spring Security 对 JOSE(Javascript Object 签名和加密)framework 的支持。
+   它由一系列规范构建：
+   * JSON Web 令牌(JWT)
+   * JSON Web 签名(JWS)
+   * JSON Web 加密(JWE)
+   * JSON Web Key(JWK)
+   ```
+9. ACL - spring-security-acl.jar
+   ```
+   专门域 object ACL implementation。
+   用于将安全性应用于 application 中的特定域 object 实例。
+   ```
+10. CAS - spring-security-cas.jar
+    ```
+    Spring Security 的 CAS client integration。
+    如果要对 CAS 单 sign-on 服务器使用 Spring Security web 身份验证。
+    ```
+11. OpenID - spring-security-openid.jar
+    ```
+    OpenID web 身份验证支持。
+    用于针对外部 OpenID 服务器对用户进行身份验证。
+    ```
+12. 测试 - spring-security-test.jar
+    ```
+    支持使用 Spring Security 进行测试。
+    ```
