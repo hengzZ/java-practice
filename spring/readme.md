@@ -1080,6 +1080,9 @@ spring-security.xml
         http://www.springframework.org/schema/security
         http://www.springframework.org/schema/security/spring-security.xsd">
 
+    <!-- 自定义的 UserDetailsService 实现类 -->
+    <bean id="userService" class="com.petersdemo.ssm.service.impl.UserServiceImpl"/>
+
     <!-- 此处切换成数据库中的用户名和密码，此时，IUserService 需要 extends UserDetailsService -->
     <security:authentication-manager>
         <security:authentication-provider user-service-ref="userService">
@@ -1298,6 +1301,9 @@ spring-security.xml
         http://www.springframework.org/schema/beans/spring-beans.xsd
         http://www.springframework.org/schema/security
         http://www.springframework.org/schema/security/spring-security.xsd">
+
+    <!-- 自定义的 UserDetailsService 实现类 -->
+    <bean id="userService" class="com.petersdemo.ssm.service.impl.UserServiceImpl"/>
 
     <!-- 切换成数据库中的用户名和密码，此时，IUserService 需要 extends UserDetailsService -->
     <security:authentication-manager>
