@@ -1591,10 +1591,107 @@ public class UserServiceImpl implements IUserService {
     支持使用 Spring Security 进行测试。
     ```
 
-##### 使用自定义的 login 页面完成 Spring Security 的登陆认证
+#### 使用自定义的 login 页面完成 Spring Security 的登陆认证
 1. 导入 Spring Security 的依赖，同上。
 2. web.xml 中创建 Filter，同上。
 3. spring-security.xml 配置文件配置
    ```xml
+   <?xml version="1.0" encoding="UTF-8"?>
+   <beans xmlns="http://www.springframework.org/schema/beans"
+          xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+          xmlns:security="http://www.springframework.org/schema/security"
+          xsi:schemaLocation="http://www.springframework.org/schema/beans
+           http://www.springframework.org/schema/beans/spring-beans.xsd
+           http://www.springframework.org/schema/security
+           http://www.springframework.org/schema/security/spring-security.xsd">
 
+       <!-- 配置不过滤的资源 (静态资源及登陆相关) -->
+       <security:http security="none" pattern="/pages/login.jsp" />
+       <security:http security="none" pattern="/pages/failer.jsp"/>
+       <security:http auto-config="true" use-expressions="false">
+           <!-- 配置拦截的连接，表示任意路径都需要 ROLE_USER 权限
+                配置时它应该是一个以逗号分隔的角色列表，请求的用户只需拥有其中的一个角色就能成功访问。 -->
+           <security:intercept-url pattern="/**" access="ROLE_USER,ROLE_ADMIN" />
+           <!-- 自定义登陆页面，login-page 自定义登陆页面 authentication-failure-url 用户权限验证失败后才会跳转到这个 url
+                default-target-url 登陆成功后跳转的页面。 注意，登陆页面用户名 username， 密码 password， action:login -->
+           <security:form-login login-page="/pages/login.jsp"
+                                login-processing-url="/login" username-parameter="username" password-parameter="password"
+                                authentication-failure-url="/pages/failer.jsp"
+                                default-target-url="/pages/hello.jsp"
+                                authentication-success-forward-url="/pages/hello.jsp"
+           />
+           <!-- 用户退出，invalidate-session 是否删除 session， logout-url 登出处理链接（即：指定触发退出事件的url）
+                logout-success-url 登出成功页面。
+                注意，登出操作只需要链接到 logout 即可登出当前用户，不需要创建 logout.jsp 页面的。 -->
+           <security:logout invalidate-session="true" logout-url="/logout"
+                            logout-success-url="/pages/login.jsp" />
+           <!-- 关闭 CSRF，防止页面中没有配置 crsf 而报错。 -->
+           <security:csrf disabled="true"/>
+       </security:http>
+
+       <!-- 自定义的 UserDetailsService 实现类，是一个扩展了 UserDetailsService 接口的 IUserService 实现类 -->
+       <bean id="userService" class="com.petersdemo.ssm.service.impl.UserServiceImpl"/>
+
+       <!-- 此处切换成使用数据库中的用户名和密码来认证，此时，IUserService 需要 extends UserDetailsService -->
+       <!-- 由于自定义类扩展了 UserDetailsService 接口，此时在认证时，就会调用实现类的 loadUserByUsername 函数，
+            该函数必须返回一个 UserDetails 对象。 -->
+       <security:authentication-manager>
+           <security:authentication-provider user-service-ref="userService">
+               <!-- 配置加密的方式 -->
+               <security:password-encoder ref="passwordEncoder"/>
+           </security:authentication-provider>
+       </security:authentication-manager>
+
+       <!-- 配置加密类 -->
+       <bean id="passwordEncoder" class="org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder"/>
+
+   </beans>
    ```
+4. 登陆页面 login.html/login.jsp。
+   ###### 注意，``action`` 必须指定为 ``login``，另外 ``method 为 post，用户名和密码输入框的 name 属性分别为 username、password``。 这是框架约定好的，不可修改。
+   ```html
+   <%@ page contentType="text/html;charset=UTF-8" language="java" pageEncoding="UTF-8"%>
+   <!DOCTYPE html>
+   <html>
+   <head>
+     <title>登陆认证</title>
+   </head>
+   <body>
+
+     <!-- 登陆表单 -->
+     <form action="${pageContext.request.contextPath}/login" method="POST">
+        <table>
+            <tr>
+                <td>用户名：</td>
+                <td><input type="text" name="username"/></td>
+            </tr>
+            <tr>
+                <td>密码：</td>
+                <td><input type="password" name="password"/></td>
+            </tr>
+            <tr>
+                <td colspan="2" align="center">
+                    <input type="submit" value="登陆"/>
+                    <input type="reset" value="重置"/>
+                </td>
+            </tr>
+        </table>
+     </form>
+     <!-- /登陆表单 -->
+
+   </body>
+   </html>
+   ```
+5. 用户退出。 用户退出需要在 ``<security:http auto-config="true" use-expressions="false">`` 中添加如下配置：
+* spring-security.xml 添加配置
+   ```xml
+   <!-- 用户退出，invalidate-session 是否删除 session， logout-url 登出处理链接（即：指定触发退出事件的url）
+             logout-success-url 登出成功页面。
+             注意，登出操作只需要链接到 logout 即可登出当前用户，不需要创建 logout.jsp 页面的。 -->
+   <security:logout invalidate-session="true" logout-url="/logout"
+                    logout-success-url="/pages/login.jsp" />
+   ```
+* 在页面中添加/触发退出事件
+  ```html
+  <a href="${pageContext.request.contextPath}/logout" class="btn btn-default btn-flat">注销</a>
+  ```
