@@ -340,8 +340,12 @@ RequestMapping methodAnnotation = (RequestMapping) executionMethod.getAnnotation
 ##### 4.2 示例
 查看文档后面的 “银行转账案例”。
 
-#### 5 AOP
+#### 5 Spring AOP
+AOP：全称是 Aspect Oriented Programming 即：面向切面编程。 简单的说，它就是把我们程序重复的代码抽取出来，在需要执行的时候，使用动态代理的技术，在不修改源码的情况下，对我们的已有方法进行增强（附加新功能，就像Python的装饰器对被装饰方法的增强一样）。
 
+* Spring 基于 XML 的 AOP。
+* Spring 基于注解的 AOP。
+* 在实际使用中应注意：切入点表达式的写法，常用通知类型，环绕通知。
 
 #### 6 AOP 相关术语
 
