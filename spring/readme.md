@@ -39,10 +39,108 @@ Inversion of Control (IOC) 是一种框架设计理念，其初衷是实现程�
  */
 private IAccountDao accountDao = new AccountDaoImpl();  // 一般方式
 private IAcountDao accountDao = (IAccountDao)BeanFactory.getBean("accountDao");  // IOC设计模式
+
+/**
+ * 工厂类
+ */
+public class BeanFactory {
+
+    public static Object getBean(String className) {
+        try {
+            //通过类名生成实例对象并将其返回
+            Class c = Class.forName(className);
+            Object obj = c.newInstance();
+            return obj;
+        }
+        catch(Exception e) {
+            e.printStackTrace();
+			return null;
+        }
+    }
+}
 ```
 IOC 设计模式的好处是，类名字符串还可以进一步放置于 xml 配置文件中，实现一套代码多种组合。
 
 IOC 设计模式的最常见实现方式，叫做 “依赖注入”（Dependency Injection，DI），此外还有一种实现方式，叫 “依赖查找”（Dependency Lookup）。
+
+##### 依赖注入的示例：
+```java
+package com.petersdemo.factory;
+
+public class BeanFactory {
+
+    private IAccountService accountService;
+
+    private TransactionManager txManager;
+
+    // 提供注入（DI）接口
+    public void setAccountService(IAccountService accountService) {
+        this.accountService = accountService;
+    }
+
+    // 提供注入（DI）接口
+    public void setTxManager(TransactionManager txManager) {
+        this.txManager = txManager;
+    }
+
+    /**
+     * 获取 Service 代理对象
+     * return IAccountService
+     */
+    public IAccountService getAccountService() {
+        return (IAccountService) Proxy.newProxyInstance(
+            accountService.getClass().getClassLoader(),
+            accountService.getClass().getInterfaces(),
+            new InvocationHandler() {
+                /**
+                * 添加事务的支持
+                *
+                * @param proxy
+                * @param method
+                * @param args
+                * @return
+                * @throws Throwable
+                */
+                @Override
+                public Object invoke(Object proxy, Method method, Object[] args) throws Trowable {
+                    if ("test".equals(method.getName())) {
+                        return method.invoke(accountService, args);
+                    }
+                    Object rtValue = null;
+                    try {
+                        //1. 开启事务
+                        txManager.beginTransaction();
+                        //2. 执行操作
+                        rtValue = method.invoke(accountService, args);
+                        //3. 提交事务
+                        txManager.commit();
+                        //4. 返回结果
+                        return rtValue;
+                    } catch (Exception e) {
+                        //5. 回滚操作
+                        txManager.rollback();
+                        throw new RuntimeException(e);
+                    } finally {
+                        //6. 释放连接
+                        txManager.release();
+                    }
+                }
+        }); // End of return
+    }
+}
+```
+```xml
+<!-- 通过一个工厂类获取一个代理类的实例对象 -->
+<bean id="proxyAccountService" factory-bean="beanFactory" factory-method="getAccountService"/>
+<!-- 创建一个工厂类实例 beanFactory -->
+<bean id="beanFactory", class="com.petersdemo.factory.BeanFactory">
+    <!-- 注入 accountService，自动会调用 setAccountService 为其赋值。 -->
+    <property name="accountService" ref="accountService"/>
+    <!-- 注入 txManager，自动会调用 setTxManager 为其赋值。 -->
+    <property name="txManager" ref="txManager"/>
+</bean>
+<!-- 注意，我们此时已假设 ref="accountService" 和 ref="txManager" 指向的对象已通过 <bean> 标签创建完成，否则，运行时报引用为空错误。 -->
+```
 
 #### AOP 设计模式
 AOP 是 Aspect Oriented Programming 的缩写。 面向切面编程，通过预编译方式和运行期动态代理，实现程序功能的灵活性和可扩展性，AOP 也是 GoF 设计模式的延伸。
@@ -51,54 +149,83 @@ AOP 的初衷是将日志记录，性能统计，安全控制，事务处理，�
 
 ##### AOP 与 OOP 异同点 （封装 -> 切片）
 * OOP 是对业务处理过程的实体及其属性和行为进行抽象封装。 （具体业务 -> 一个对象）
-* AOP 则是对业务处理过程中的 “切面（处理过程中的某个步骤或阶段）” 进行提取。（动态代理技术）
+* AOP 则是对业务处理过程中的 “切面（处理过程中的某个步骤或阶段）” 进行提取，将它们单独封装在一起。（Java 动态代理技术 - 相当于 Python 的装饰器对被装饰函数的增强）
 
 ```java
 /**
  * AOP 设计模式实践
  */
-public IAccountService getAccountService() {
-    return (IAccountService)Proxy.newProxyInstance(
-        accountService.getClass().getClassLoader(),
-        accountService.getClass().getInterfaces(),
-        new InvocationHandler() {
-            /**
-            * 添加事务的支持
-            *
-            * @param proxy
-            * @param method
-            * @param args
-            * @return
-            * @throws Throwable
-            */
-            @Override
-            public Object invoke(Object proxy, Method method, Object[] args) throws Trowable {
-                if ("test".equals(method.getName())) {
-                    return method.invoke(accountService, args);
+package com.petersdemo.factory;
+
+import com.petersdemo.service.IAccountService;
+
+/**
+ * 用于创建 Service 的代理对象的工厂
+ */
+public class BeanFactory {
+
+    private IAccountService accountService;
+
+    private TransactionManager txManager;
+
+    // 提供注入（DI）接口
+    public void setAccountService(IAccountService accountService) {
+        this.accountService = accountService;
+    }
+
+    // 提供注入（DI）接口
+    public void setTxManager(TransactionManager txManager) {
+        this.txManager = txManager;
+    }
+
+    /**
+     * 获取 Service 代理对象，动态创建出一个代理对象。
+     *（此时使用的是 Java 官方的动态代理技术，详细内容查阅 Proxy 类的介绍。）
+     * return IAccountService
+     */
+    public IAccountService getAccountService() {
+        return (IAccountService) Proxy.newProxyInstance(
+            accountService.getClass().getClassLoader(),
+            accountService.getClass().getInterfaces(),
+            new InvocationHandler() {
+                /**
+                * 添加事务的支持
+                *
+                * @param proxy
+                * @param method
+                * @param args
+                * @return
+                * @throws Throwable
+                */
+                @Override
+                public Object invoke(Object proxy, Method method, Object[] args) throws Trowable {
+                    if ("test".equals(method.getName())) {
+                        return method.invoke(accountService, args);
+                    }
+                    Object rtValue = null;
+                    try {
+                        //1. 开启事务
+                        txManager.beginTransaction();
+                        //2. 执行操作
+                        rtValue = method.invoke(accountService, args);
+                        //3. 提交事务
+                        txManager.commit();
+                        //4. 返回结果
+                        return rtValue;
+                    } catch (Exception e) {
+                        //5. 回滚操作
+                        txManager.rollback();
+                        throw new RuntimeException(e);
+                    } finally {
+                        //6. 释放连接
+                        txManager.release();
+                    }
                 }
-                Object rtValue = null;
-                try {
-                    //1. 开启事务
-                    txManager.beginTransaction();
-                    //2. 执行操作
-                    rtValue = method.invoke(accountService, args);
-                    //3. 提交事务
-                    txManager.commit();
-                    //4. 返回结果
-                    return rtValue;
-                } catch (Exception e) {
-                    //5. 回滚操作
-                    txManager.rollback();
-                    throw new RuntimeException(e);
-                } finally {
-                    //6. 释放连接
-                    txManager.release();
-                }
-            }
-      }); // End of return
+        }); // End of return
+    }
 }
 ```
-为对象添加代理是 AOP 的核心逻辑。
+为对象动态添加代理以实现周边功能的增强，是 AOP 的核心逻辑。
 
 ##### AOP 相关术语
 * Joinpoint （连接点）
@@ -111,9 +238,9 @@ public IAccountService getAccountService() {
 * Aspect （切面）
 
 #### Spring 代码开发的特点
-* 编写核心业务代码 （开发主线）
-* 公用代码抽取，制作成通知。 （AOP 编程人员）
-* 在配置文件中，声明切入点与通知的关系，即切面。 （AOP 编程人员）
+* 编写核心业务代码。（开发主线：实现功能类。没有异常处理，没有任何周边操作。）
+* 公用代码抽取，制作成通知。（AOP 编程核心：梳理所有周边操作，对它们进行通知类型划分，然后封装于一个代理类中。注意是一个代理类。）
+* 在配置文件中，声明切入点与通知的关系，即面向切面。（AOP 配置核心：使用代理类替换到所有的直接功能类。注意，从此以后功能类永不直接使用。）
 
 ##### 整个开发阶段，核心和难点是有一双慧眼，去抽取公共代码。
 
