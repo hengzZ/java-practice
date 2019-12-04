@@ -430,3 +430,38 @@ AOP：全称是 Aspect Oriented Programming 即：面向切面编程。 简单�
 是切入点和通知（引介）的结合。
 
 # 银行转账案例
+
+#### 1 转账案例的纯业务代码
+
+#### 2 传统的事务控制案例
+
+#### 知识补充：
+
+##### 1 Java 的 ThreadLocal 类
+早在 JDK 1.2 版本就提供了 ``java.lang.ThreadLocal``，它的引入为解决多线程程序的并发问题提供了一种新的思路。
+
+ThreadLocal 和 Synchronized 都是为了解决多线程中相同变量的访问冲突问题，其中：
+* Synchronized 是通过线程等待（锁），牺牲时间来解决访问冲突。
+* ThreadLocal 是通过每个线程单独一份存储空间（副本），牺牲空间来解决冲突。
+
+ThreadLocal 具有线程隔离效果，当某些数据以线程为作用域，希望不同线程具有不同的数据副本时，就应该考虑采用 ThreadLocal。
+
+##### 2 ThreadLocal 类的工作原理
+涉及的 Java 类
+* Thread
+* ThreadLocalMap
+* ThreadLocal
+* Object
+
+几者的耦合关系
+1. Thread 类中有一个成员变量 ``ThreadLocal.ThreadLocalMap inheritableThreadLocals = null;``，一个 ThreadLocalMap 类的对象。
+2. ThreadLocalMap 类其实是一个 Map，它的 key 是 ThreadLocal 实例对象，value 是 Object 类对象（数据对象的基类）。
+    * 简单说，ThreadLocalMap 就是一个 ThreadLocal 和 Object 的关联表。 （类似于数据库的中间表）
+3. ThreadLocal 又如何与 Thread 联系起来？
+    * 注意，``Thread t = Thread.currentThread();`` 可以获取到当前线程对象。
+    * 因此，ThreadLocal 就可以通过 ``ThreadLocalMap map = t.threadLocals;`` 获取到当前线程对象和映射表。
+    * 然后，就可以访问当前线程的数据副本了（增删改查）。
+
+ThreadLocal 的作用是提供线程内的局部变量，这种变量在线程的生命周期内起作用。每一个线程都可以随意修改自己的变量副本，而不会对其他线程产生影响。
+
+#### 3 AOP 模式实现事务控制
