@@ -771,7 +771,7 @@ public class AccountServiceImpl implements IAccountService {
     }
 }
 ```
-##### 以上，就是最纯净版本的业务代码。
+#### 以上，就是最纯净版本的业务代码。
 
 ### 1.4 单元测试
 
@@ -819,9 +819,9 @@ public class AccountServiceImpl implements IAccountService {
 </dependency>
 ```
 
-#### 测试环境搭建（Spring 整合 Junit4 单元测试）
+### 测试环境搭建（Spring 整合 Junit4 单元测试）
 
-##### 1 在 Service 子项目的 src/test/java 目录下，创建 package 形如 ``com.petersdemo.account.service_test``，然后创建测试类。
+#### 1 在 Service 子项目的 src/test/java 目录下，创建 package 形如 ``com.petersdemo.account.service_test``，然后创建测试类。
 AccountServiceTest.java
 ```java
 package com.petersdemo.account.service_test;
@@ -842,7 +842,7 @@ public class AccountServiceTest {
 }
 ```
 
-##### 2 在 Service 子项目的 src/test/resources 目录下，创建 bean.xml 作为 Spring 的 ApplicationContext 配置文件。
+#### 2 在 Service 子项目的 src/test/resources 目录下，创建 bean.xml 作为 Spring 的 ApplicationContext 配置文件。
 bean.xml
 ```xml
 <?xml version="1.0" encoding="UTF-8"?>
@@ -860,7 +860,7 @@ bean.xml
 ```
 注意，src/java/resources 目录下的文件编译后将拷贝至 target/classes 目录，src/test/resources 目录下的则拷贝至 target/test-classes 目录。
 
-##### 3 测试环境运行
+#### 3 测试环境运行
 在 IDEA 的右侧， Maven 控制面板中，执行父项目的 Lifecycle ``test``，如没有报错并运行成功表示测试环境搭建成功。示例：
 ```
 Results :
@@ -882,7 +882,7 @@ Tests run: 1, Failures: 0, Errors: 0, Skipped: 0
 [INFO] ------------------------------------------------------------------------
 ```
 
-##### 4 开始测试
+#### 4 开始测试
 ##### bean.xml 配置 Spring 的依赖注入 （Service -> Dao -> 数据库访问配置）
 ```xml
 <?xml version="1.0" encoding="UTF-8"?>
@@ -962,7 +962,7 @@ maven 环境依赖
 </dependency>
 ```
 
-##### 编写测试单元
+#### 编写测试单元
 AccountServiceTest.java
 ```java
 package com.petersdemo.account.service_test;
@@ -1024,18 +1024,472 @@ public class AccountServiceTest {
 }
 ```
 
-#### 2 传统的事务控制案例 （为业务代码添加事务管理）
+## 2 传统的事务控制案例 （为业务代码添加事务管理）
 
-##### 2.1 为了功能增强而引入的对象：
+所谓事务控制，针对的对象是：内部包含有数据库访问或操作的 Service 的方法。
+
+###### 基于的假设是： 如果服务中发生任何异常，都应该回到服务还没开始时的状态。
+
+### 2.1 为了功能增强而必须引入的对象：
+
 1. 连接工具类 ConnectionUtils。
 2. 事务管理相关的工具类 TransactionManager。
 
-##### 2.2 ConnectionUtils
+ConnectionUtils.java （事务管理的一致性首先要从连接的一致性控制开始：“一个线程中使用的 sql 会话保证是同一个实例”。）
+```java
+package com.petersdemo.account.utils;
 
-##### 2.3 TransactionManager
+import javax.sql.DataSource;
+import java.sql.Connection;
 
-##### 2.4 最原始的事务管理代码织入
+/**
+ * 连接的工具类，它用于从数据源中获取一个连接，并且实现和线程的绑定
+ */
+public class ConnectionUtils {
 
+    private ThreadLocal<Connection> tl = new ThreadLocal<Connection>();
+
+    private DataSource dataSource;
+
+    //DI接口
+    public void setDataSource(DataSource dataSource) {
+        this.dataSource = dataSource;
+    }
+
+    /**
+     * 获取当前线程上的连接
+     */
+    public Connection getThreadConnection() {
+        try {
+            // 1.从 ThreadLocal 上获取
+            Connection conn = tl.get();
+            // 2.判断是否为空
+            if (conn == null) {
+                // 为空，从线程池获取，并存入 ThreadLocal
+                conn = dataSource.getConnection();
+                tl.set(conn);
+            }
+            // 3.返回当前线程上的连接
+            return conn;
+        }
+        catch(Exception e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    /**
+     * 连接和线程解绑 （从线程上移除连接）
+     */
+    public void removeConnection() {
+        tl.remove();
+    }
+}
+```
+
+TransactionManager.java （事务管理的执行工具类：开启、提交、回滚、释放连接）
+```java
+package com.petersdemo.account.utils;
+
+/**
+ * 事务管理相关的工具类，内部包含了： 开启事务、提交事务、回滚事务和释放连接。
+ */
+public class TransactionManager {
+
+    private ConnectionUtils connectionUtils;
+
+    //DI注入
+    public void setConnectionUtils(ConnectionUtils connectionUtils) {
+        this.connectionUtils = connectionUtils;
+    }
+
+    /**
+     * 开启事务
+     */
+    public void beginTransaction() {
+        try {
+            connectionUtils.getThreadConnection().setAutoCommit(false);
+        }
+        catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
+
+    /**
+     * 提交事务
+     */
+    public void commit() {
+        try {
+            connectionUtils.getThreadConnection().commit();
+        }
+        catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
+
+    /**
+     * 回滚事务
+     */
+    public void rollback() {
+        try {
+            connectionUtils.getThreadConnection().rollback();
+        }
+        catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
+
+    /**
+     * 释放连接
+     */
+    public void release() {
+        try {
+            connectionUtils.getThreadConnection().close(); //还回连接池中
+            connectionUtils.removeConnection(); //连接和线程解绑
+        }
+        catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
+}
+```
+
+##### 将 “连接一致性” 约束织入 Dao 中
+AccountDaoImpl.java
+```java
+package com.petersdemo.account.dao.impl;
+
+import com.petersdemo.account.utils.ConnectionUtils;
+import com.petersdemo.account.dao.IAccountDao;
+import com.petersdemo.account.domain.Account;
+import org.apache.commons.dbutils.QueryRunner;
+import org.apache.commons.dbutils.handlers.BeanHandler;
+import org.apache.commons.dbutils.handlers.BeanListHandler;
+
+import java.util.List;
+
+public class AccountDaoImpl implements IAccountDao {
+
+    private QueryRunner runner;
+
+    private ConnectionUtils connectionUtils;
+
+    // 添加依赖注入(DI)接口
+    public void setRunner(QueryRunner runner) {
+        this.runner = runner;
+    }
+
+    //DI接口
+    public void setConnectionUtils(ConnectionUtils connectionUtils) {
+        this.connectionUtils = connectionUtils;
+    }
+
+    @Override
+    public List<Account> findAllAccount() {
+        try {
+            return runner.query(connectionUtils.getThreadConnection(), "select * from account", new BeanListHandler<Account>(Account.class));
+        }
+        catch (Exception e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    @Override
+    public Account findAccountById(String id) {
+        try {
+            return runner.query(connectionUtils.getThreadConnection(), "select * from account where id = ?", new BeanHandler<Account>(Account.class), id);
+        }
+        catch (Exception e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    @Override
+    public Account findAccountByName(String accountName) {
+        try {
+            List<Account> accounts = runner.query(connectionUtils.getThreadConnection(), "select * from account where name = ?", new BeanListHandler<Account>(Account.class), accountName);
+            if (accounts == null || accounts.size() == 0) {
+                return null;
+            }
+            else if (accounts.size() > 1) {
+                throw new RuntimeException("结果集不唯一，数据有问题");
+            }
+            return accounts.get(0);
+        }
+        catch (Exception e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    @Override
+    public void saveAccount(Account account) {
+        try {
+            runner.update(connectionUtils.getThreadConnection(), "insert into account(id, name, money) values(uuid(), ?, ?)", account.getName(), account.getMoney());
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    @Override
+    public void updateAccount(Account account) {
+        try {
+            runner.update(connectionUtils.getThreadConnection(), "update account set name = ?, money = ? where name = ?", account.getName(), account.getMoney(), account.getName());
+        }
+        catch (Exception e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    @Override
+    public void deleteAccountById(String id) {
+        try {
+            runner.update(connectionUtils.getThreadConnection(), "delete from account where id = ?", id);
+        }
+        catch (Exception e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    @Override
+    public void deleteAccountByName(String accountName) {
+        try {
+            runner.update(connectionUtils.getThreadConnection(), "delete from account where name = ?", accountName);
+        }
+        catch (Exception e) {
+            throw new RuntimeException(e);
+        }
+    }
+}
+```
+
+### 2.2 使用最原始的方式，将事务控制代码织入
+
+AccountServiceWithTxImpl.java
+```java
+package com.petersdemo.account.service.impl;
+
+import com.petersdemo.account.dao.IAccountDao;
+import com.petersdemo.account.domain.Account;
+import com.petersdemo.account.service.IAccountService;
+import com.petersdemo.account.utils.TransactionManager;
+
+import java.util.List;
+
+/**
+ * 最原始的事务功能织入方式
+ */
+public class AccoutServiceWithTxImpl implements IAccountService {
+
+    private IAccountDao accountDao;
+
+    private TransactionManager txManager;
+
+    //DI接口
+    public void setAccountDao(IAccountDao accountDao) {
+        this.accountDao = accountDao;
+    }
+
+    //DI接口
+    public void setTxManager(TransactionManager txManager) {
+        this.txManager = txManager;
+    }
+
+    @Override
+    public List<Account> findAllAccount() {
+        try {
+            //1.开启事务
+            txManager.beginTransaction();
+            //2.执行操作
+            List<Account> accounts = accountDao.findAllAccount();
+            //3.提交事务
+            txManager.commit();
+            //4.返回结果
+            return  accounts;
+        } catch (Exception e) {
+            //5.回滚事务
+            txManager.rollback();
+            throw new RuntimeException(e);
+        } finally {
+            //6.释放连接
+            txManager.release();
+        }
+    }
+
+    @Override
+    public Account findAccountById(String accountId) {
+        return accountDao.findAccountById(accountId);
+    }
+
+    @Override
+    public Account findAccountByName(String accountName) {
+        return accountDao.findAccountByName(accountName);
+    }
+
+    @Override
+    public void saveAccount(Account account) {
+        accountDao.saveAccount(account);
+    }
+
+    @Override
+    public void updateAccount(Account account) {
+        accountDao.updateAccount(account);
+    }
+
+    @Override
+    public void deleteAccountByName(String accountName) {
+        accountDao.deleteAccountByName(accountName);
+    }
+
+    @Override
+    public void transfer(String sourceName, String targetName, Double money) {
+        try {
+            txManager.beginTransaction();
+            //1.根据名称查询转出账户
+            Account source = accountDao.findAccountByName(sourceName);
+            //2.根据名称查询转入账户
+            Account target = accountDao.findAccountByName(targetName);
+            //3.转出账户减钱
+            source.setMoney(source.getMoney()-money);
+            //4.转入账户加钱
+            target.setMoney(target.getMoney()+money);
+            //5.更新转出账户
+            accountDao.updateAccount(source);
+            //6.更新转入账户
+            accountDao.updateAccount(target);
+            txManager.commit();
+        } catch (Exception e) {
+            txManager.rollback();
+        } finally {
+            txManager.release();
+        }
+    }
+}
+```
+
+bean.xml 配置 Spring Bean 实例注入
+```xml
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+       xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+       xmlns:context="http://www.springframework.org/schema/context"
+       xsi:schemaLocation="http://www.springframework.org/schema/beans
+        http://www.springframework.org/schema/beans/spring-beans.xsd
+        http://www.springframework.org/schema/context
+        http://www.springframework.org/schema/context/spring-context.xsd">
+
+    <!-- 注入 accountService 依赖 -->
+    <bean id="accountService" class="com.petersdemo.test.service.impl.AccountServiceImpl">
+        <!-- 注入 accountDao 依赖 -->
+        <property name="accountDao" ref="accountDao"/>
+    </bean>
+
+    <!-- 创建 accountDao -->
+    <bean id="accountDao" class="com.petersdemo.test.dao.impl.AccountDaoImpl">
+        <!-- 注入 QueryRunner runner -->
+        <property name="runner" ref="runner"/>
+        <!-- 注入 connectionUtils -->
+        <property name="connectionUtils" ref="connectionUtils"/>
+    </bean>
+
+    <!-- 创建 QueryRunner runner -->
+    <bean id="runner" class="org.apache.commons.dbutils.QueryRunner" scope="prototype">
+        <!-- 指定数据源， QueryRunner 的源码定义的构造方法的参数是 ds -->
+        <constructor-arg name="ds" ref="dataSource"/>
+    </bean>
+
+    <!-- 创建 dataSource -->
+    <bean id="dataSource" class="com.mchange.v2.c3p0.ComboPooledDataSource">
+        <!-- 连接数据库的必备信息 -->
+        <property name="driverClass" value="com.mysql.jdbc.Driver"/>
+        <property name="jdbcUrl" value="jdbc:mysql://localhost:3306/account?useUnicode=true&amp;characterEncoding=utf8"/>
+        <property name="user" value="peter"/>
+        <property name="password" value="peter@root"/>
+    </bean>
+
+    <!-- 创建带事务控制的 accountService Bean -->
+    <bean id="accountServiceWithTx" class="com.petersdemo.test.service.impl.AccoutServiceWithTxImpl">
+        <!-- 注入 accountDao -->
+        <property name="accountDao" ref="accountDao"/>
+        <!-- 注入 txManager -->
+        <property name="txManager" ref="txManager"/>
+    </bean>
+
+    <!-- 创建 txManager -->
+    <bean id="txManager" class="com.petersdemo.test.utils.TransactionManager">
+        <!-- 注入 connectionUtils -->
+        <property name="connectionUtils" ref="connectionUtils"/>
+    </bean>
+
+    <!-- 创建 connectionUtils -->
+    <bean id="connectionUtils" class="com.petersdemo.test.utils.ConnectionUtils">
+        <!-- 注入 dataSource -->
+        <property name="dataSource" ref="dataSource"/>
+    </bean>
+
+</beans>
+```
+
+测试代码
+```java
+package com.petersdemo.account.service_test;
+
+import com.petersdemo.account.domain.Account;
+import com.petersdemo.account.service.IAccountService;
+import org.junit.test;
+import org.junit.runner.RunWith;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.test.context.ContextConfiguration;
+import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
+
+import java.util.List;
+
+@RunWith(SpringJUnit4ClassRunner.class)
+@ContextConfiguration(locations = {"classpath:bean.xml"})
+public class AccountServiceTest {
+
+    @Autowired
+    @Qualifier("accountServiceWithTx")  //存在多个 Bean 实例时，需要使用 Qualifier 指定注入哪个
+    private IAccountService accountService;
+
+    @Test
+    public void testInit(){
+        System.out.println("Test environment init success.");
+    }
+
+    @Test
+    public void testFindAll() {
+        List<Account> accounts = accountService.findAllAccount();
+        for (Account account : accounts) {
+            System.out.println(account);
+        }
+    }
+
+    @Test
+    public void testSave() {
+        Account account = new Account();
+        account.setName("mock");
+        account.setMoney(1234d);
+        accountService.saveAccount(account);
+    }
+
+    @Test
+    public void testUpdate() {
+        Account account = accountService.findAccountByName("mock");
+        account.setMoney(1000d);
+        accountService.updateAccount(account);
+    }
+
+    @Test
+    public void testDelete() {
+        accountService.deleteAccountByName("mock");
+    }
+
+    @Test
+    public void testTransfer() {
+        accountService.transfer("aaa", "bbb", 100d);
+    }
+}
+```
 
 #### 知识补充：
 ##### 1 Java 的 ThreadLocal 类
@@ -1065,11 +1519,12 @@ ThreadLocal 具有线程隔离效果，当某些数据以线程为作用域，�
 
 ThreadLocal 的作用是提供线程内的局部变量，这种变量在线程的生命周期内起作用。每一个线程都可以随意修改自己的变量副本，而不会对其他线程产生影响。
 
-#### 3 AOP 模式实现事务控制 （运用 Java 的代理技术进行 AOP 编程）
+## 3 AOP 模式实现事务控制 （运用 Java 的代理技术进行 AOP 编程）
 
-##### 3.1 为了功能增强而引入的对象
+### 3.1 为了功能增强而必须引入的对象
 * BeanFactory 工厂类。（生成代理对象，完成方法增强功能织入。）
 
-##### 3.2 BeanFactory
+### 3.2 BeanFactory
 
-##### 3.3 AOP 形式的事务管理代码织入
+### 3.3 AOP 形式的事务管理代码织入
+
