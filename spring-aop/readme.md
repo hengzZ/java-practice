@@ -431,9 +431,9 @@ AOP：全称是 Aspect Oriented Programming 即：面向切面编程。 简单�
 
 # 银行转账案例
 
-#### 1 转账案例的纯业务代码 （纯净版本）
+## 1 转账案例的纯业务代码 （纯净版本）
 
-##### 1.1 表对象和表结构
+### 1.1 表对象和表结构
 
 Account 对象的表结构
 
@@ -494,7 +494,7 @@ public class Account {
 }
 ```
 
-##### 1.2 Dao 接口和实现类
+### 1.2 Dao 接口和实现类
 IAccountDao.java
 ```java
 package com.petersdemo.account.dao;
@@ -651,7 +651,7 @@ public class AccountDaoImpl implements IAccountDao {
 </dependency>
 ```
 
-##### 1.3 Service 接口和实现类
+### 1.3 Service 接口和实现类
 IAccountService.java
 ```java
 package com.petersdemo.account.service;
@@ -769,10 +769,124 @@ public class AccountServiceImpl implements IAccountService {
         //6.更新转入账户
         accountDao.updateAccount(target);
     }
+}
 ```
-以上，就是最纯净版的业务代码。
+##### 以上，就是最纯净版本的业务代码。
 
-##### 1.4 测试代码
+### 1.4 单元测试
+
+首先，在父工程的 pom.xml 文件添加如下配置（编译环境）：
+```xml
+<!-- 指定源文件编码方式 -->
+<properties>
+    <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+</properties>
+<!-- 指定编译插件版本以及java版本 -->
+<build>
+    <plugins>
+        <plugin>
+            <groupId>org.apache.maven.plugins</groupId>
+            <artifactId>maven-compiler-plugin</artifactId>
+            <version>3.1</version>
+            <configuration>
+                <source>9</source>
+                <target>9</target>
+            </configuration>
+        </plugin>
+    </plugins>
+</build>
+```
+
+然后，在父工程的 pom.xml 文件添加如下配置（Junit4测试环境）：
+```xml
+<!-- Spring-Junit 测试环境 -->
+<dependency>
+    <groupId>org.springframework</groupId>
+    <artifactId>spring-context</artifactId>
+    <version>5.0.2.RELEASE</version>
+</dependency>
+
+<dependency>
+    <groupId>junit</groupId>
+    <artifactId>junit</artifactId>
+    <version>4.12</version>
+</dependency>
+
+<dependency>
+    <groupId>org.springframework</groupId>
+    <artifactId>spring-test</artifactId>
+    <version>5.0.2.RELEASE</version>
+</dependency>
+```
+
+#### 测试环境搭建（Spring 整合 Junit4 单元测试）
+
+##### 1 在 Service 子项目的 src/test/java 目录下，创建 package 形如 ``com.petersdemo.account.service_test``，然后创建测试类。
+AccountServiceTest.java
+```java
+package com.petersdemo.account.service_test;
+
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.springframework.test.context.ContextConfiguration;
+import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
+
+@RunWith(SpringJUnit4ClassRunner.class)
+@ContextConfiguration(locations = {"classpath:bean.xml"})  //Spring 的 ApplicationContext 配置文件 （可以为空，但必须要有。）
+public class AccountServiceTest {
+
+    @Test
+    public void testInit(){  //自定义了一个测试单元testInit
+        System.out.println("Test environment init success.");
+    }
+}
+```
+
+##### 2 在 Service 子项目的 src/test/resources 目录下，创建 bean.xml 作为 Spring 的 ApplicationContext 配置文件。
+bean.xml
+```xml
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+       xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+       xmlns:context="http://www.springframework.org/schema/context"
+       xsi:schemaLocation="http://www.springframework.org/schema/beans
+        http://www.springframework.org/schema/beans/spring-beans.xsd
+        http://www.springframework.org/schema/context
+        http://www.springframework.org/schema/context/spring-context.xsd">
+
+    <!-- 这是一个空的 Spring ApplicationContext 配置 -->
+
+</beans>
+```
+注意，src/java/resources 目录下的文件编译后将拷贝至 target/classes 目录，src/test/resources 目录下的则拷贝至 target/test-classes 目录。
+
+##### 3 测试环境运行
+在 IDEA 的右侧， Maven 控制面板中，执行父项目的 Lifecycle ``test``，如没有报错并运行成功表示测试环境搭建成功。示例：
+```
+Results :
+
+Tests run: 1, Failures: 0, Errors: 0, Skipped: 0
+
+[INFO] ------------------------------------------------------------------------
+[INFO] Reactor Summary:
+[INFO]
+[INFO] account 1.0-SNAPSHOT ............................... SUCCESS [  0.006 s]
+[INFO] domain ............................................. SUCCESS [  1.624 s]
+[INFO] dao ................................................ SUCCESS [  0.082 s]
+[INFO] service 1.0-SNAPSHOT ............................... SUCCESS [  1.654 s]
+[INFO] ------------------------------------------------------------------------
+[INFO] BUILD SUCCESS
+[INFO] ------------------------------------------------------------------------
+[INFO] Total time: 3.601 s
+[INFO] Finished at: 2019-12-05T13:29:16+08:00
+[INFO] ------------------------------------------------------------------------
+```
+
+##### 4 开始测试
+bean.xml 配置 Spring 的依赖注入
+```xml
+```
+注意，
 
 
 #### 2 传统的事务控制案例 （为业务代码添加事务管理）
