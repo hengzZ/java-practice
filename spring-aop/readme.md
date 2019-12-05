@@ -883,11 +883,146 @@ Tests run: 1, Failures: 0, Errors: 0, Skipped: 0
 ```
 
 ##### 4 开始测试
-bean.xml 配置 Spring 的依赖注入
+##### bean.xml 配置 Spring 的依赖注入 （Service -> Dao -> 数据库访问配置）
 ```xml
-```
-注意，
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+       xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+       xmlns:context="http://www.springframework.org/schema/context"
+       xsi:schemaLocation="http://www.springframework.org/schema/beans
+        http://www.springframework.org/schema/beans/spring-beans.xsd
+        http://www.springframework.org/schema/context
+        http://www.springframework.org/schema/context/spring-context.xsd">
 
+    <!-- 注入 accountService 依赖 -->
+    <bean id="accountService" class="com.petersdemo.account.service.impl.AccountServiceImpl">
+        <!-- 注入 accountDao 依赖 -->
+        <property name="accountDao" ref="accountDao"/>
+    </bean>
+
+    <!-- 创建 accountDao -->
+    <bean id="accountDao" class="com.petersdemo.account.dao.impl.AccountDaoImpl">
+        <!-- 注入 QueryRunner runner -->
+        <property name="runner" ref="runner"/>
+    </bean>
+
+    <!-- 创建 QueryRunner runner -->
+    <bean id="runner" class="org.apache.commons.dbutils.QueryRunner" scope="prototype">
+        <!-- 指定数据源， QueryRunner 的源码定义的构造方法的参数是 ds -->
+        <!-- 注意 property 与 constructor-arg 的用途差别 ！！ -->
+        <constructor-arg name="ds" ref="dataSource"/>
+    </bean>
+
+    <!-- 创建 dataSource -->
+    <bean id="dataSource" class="com.mchange.v2.c3p0.ComboPooledDataSource">
+        <!-- 连接数据库的必备信息 -->
+        <property name="driverClass" value="com.mysql.jdbc.Driver"/>
+        <property name="jdbcUrl" value="jdbc:mysql://localhost:3306/account?useUnicode=true&amp;characterEncoding=utf8"/>
+        <property name="user" value="peter"/>
+        <property name="password" value="peter@root"/>
+    </bean>
+
+</beans>
+```
+
+###### 知识扩充： Spring Bean 的 scope 作用域
+```
+# 在 Spring2.0 之前 bean 只有 2 种作用域：singleton（单例）、non-singleton（也称 prototype）。
+# 在 Spring2.0 以后，增加了 "session"、"request"、"global session" 三种专用于 Web 应用程序上下文的作用域。
+# 如今，Spring 已支持的作用域共 5 种，但用户可以根据自己的需要自定义地添加作用域。
+▫ 默认是单例模式，即 scope="singleton" 。
+  此种配置下 Spring IOC 容器中只会存在一个共享的 bean 实例，所有对 bean 的请求，只要 id 与该 bean 的定义相匹配，则只会返回 bean 的同一实例。
+▫ prototype，每一次请求都会产生一个新的 bean 实例。
+  此种配置下 Spring 不负责 bean 实例的回收，回收 prototype bean 所持有的资源是客户端代码的职责。
+▫ request 表示针对每一次 HTTP 请求都会产生一个新的 bean，同时该 bean 仅在当前 HTTP request 内有效。
+▫ session 表示针对每一次 HTTP 请求都会产生一个新的 bean，同时该 bean 仅在当前 HTTP session 内有效。
+▫ global session 类似于标准的 HTTP Session 作用域，只不过它仅仅在基于 portlet 的 web 应用中才有意义。
+```
+
+##### 注意，Setter 注入和 Constructor 注入使用的配置参数是不同的： ``setter 注入 <property name="" ref=""> ``，``构造函数 Constructor 注入 <constructor-arg name="" ref="">``。
+
+maven 环境依赖
+```xml
+<dependency>
+    <groupId>commons-dbutils</groupId>
+    <artifactId>commons-dbutils</artifactId>
+    <version>1.7</version>
+</dependency>
+
+<dependency>
+    <groupId>com.mchange</groupId>
+    <artifactId>c3p0</artifactId>
+    <version>0.9.5.4</version>
+</dependency>
+
+<dependency>
+    <groupId>mysql</groupId>
+    <artifactId>mysql-connector-java</artifactId>
+    <version>8.0.15</version>
+</dependency>
+```
+
+##### 编写测试单元
+AccountServiceTest.java
+```java
+package com.petersdemo.account.service_test;
+
+import com.petersdemo.account.domain.Account;
+import com.petersdemo.account.service.IAccountService;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.test.context.ContextConfiguration;
+import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
+
+import java.util.List;
+
+@RunWith(SpringJUnit4ClassRunner.class)
+@ContextConfiguration(locations = {"classpath:bean.xml"})
+public class AccountServiceTest {
+
+    @Autowired
+    private IAccountService accountService;
+
+    @Test
+    public void testInit(){
+        System.out.println("Test environment init success.");
+    }
+
+    @Test
+    public void testFindAll() {
+        List<Account> accounts = accountService.findAllAccount();
+        for (Account account : accounts) {
+            System.out.println(account);
+        }
+    }
+
+    @Test
+    public void testSave() {
+        Account account = new Account();
+        account.setName("mock");
+        account.setMoney(1234d);
+        accountService.saveAccount(account);
+    }
+
+    @Test
+    public void testUpdate() {
+        Account account = accountService.findAccountByName("mock");
+        account.setMoney(1000d);
+        accountService.updateAccount(account);
+    }
+
+    @Test
+    public void testDelete() {
+        accountService.deleteAccountByName("mock");
+    }
+
+    @Test
+    public void testTransfer() {
+        accountService.transfer("aaa", "bbb", 100d);
+    }
+}
+```
 
 #### 2 传统的事务控制案例 （为业务代码添加事务管理）
 
