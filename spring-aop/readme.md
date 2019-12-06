@@ -1524,7 +1524,173 @@ ThreadLocal 的作用是提供线程内的局部变量，这种变量在线程�
 ### 3.1 为了功能增强而必须引入的对象
 * BeanFactory 工厂类。（生成代理对象，完成方法增强功能织入。）
 
-### 3.2 BeanFactory
+#### 工厂方法模式
 
-### 3.3 AOP 形式的事务管理代码织入
+IAccountServiceFactory.java
+```java
+package com.petersdemo.account.factory;
 
+import com.petersdemo.account.service.IAccountService;
+
+/**
+ * AccountService 类的工厂方法模式接口
+ */
+public interface IAccountServiceFactory {
+    public IAccountService getAccountService();
+}
+```
+
+ProxyAccountServiceFactory.java
+```java
+package com.petersdemo.account.factory.impl;
+
+import com.petersdemo.account.factory.IAccountServiceFactory;
+import com.petersdemo.account.service.IAccountService;
+import com.petersdemo.account.utils.TransactionManager;
+
+import java.lang.reflect.InvocationHandler;
+import java.lang.reflect.Method;
+import java.lang.reflect.Proxy;
+
+/**
+ * 工厂方法模式：创建 AccountService 的代理对象
+ */
+public class ProxyAccountServiceFactory implements IAccountServiceFactory {
+
+    private IAccountService accountService;  //被增强实例
+
+    private TransactionManager txManager;    //提供增强操作的实例
+
+    //DI接口
+    public void setAccountService(IAccountService accountService) {
+        this.accountService = accountService;
+    }
+
+    //DI接口
+    public void setTxManager(TransactionManager txManager) {
+        this.txManager = txManager;
+    }
+
+    /**
+     * 工厂方法，获取 AccountService 代理对象
+     * @return
+     */
+    @Override
+    public IAccountService getAccountService() {
+        return (IAccountService) Proxy.newProxyInstance(accountService.getClass().getClassLoader(),
+                accountService.getClass().getInterfaces(),
+                new InvocationHandler() {
+                    /**
+                     * 添加事务的支持
+                     * @param proxy
+                     * @param method
+                     * @param args
+                     * @return
+                     * @throws Throwable
+                     */
+                    @Override
+                    public Object invoke(Object proxy, Method method, Object[] args) throws Throwable {
+                        Object rtValue = null;
+                        try {
+                            //1.开启事务
+                            txManager.beginTransaction();
+                            //2.执行操作
+                            rtValue = method.invoke(accountService, args);
+                            //3.提交事务
+                            txManager.commit();
+                            //4.返回结果
+                            return rtValue;
+                        } catch (Exception e) {
+                            //5.回滚事务
+                            txManager.rollback();
+                            throw new RuntimeException(e);
+                        } finally {
+                            //6.释放连接
+                            txManager.release();
+                        }
+                    }
+                });
+    }
+}
+```
+##### 注意，生成代理对象需要三大核心类：``被增强类``、``提供增强操作的类``、``返回代理对象的工厂类``。
+
+#### Spring IOC 配置，实现从工厂类创建代理对象的 Bean 并注入
+bean.xml
+```xml
+<!-- 创建 AccountService 的代理 Bean 实例 proxyAccountService -->
+
+
+<!-- 创建 accountService -->
+<bean id="accountService" class="com.petersdemo.account.service.impl.AccountServiceImpl">
+    <!-- 注入 accountDao 依赖 -->
+    <property name="accountDao" ref="accountDao"/>
+</bean>
+
+<!-- 创建 accountDao -->
+<bean id="accountDao" class="com.petersdemo.account.dao.impl.AccountDaoImpl">
+    <!-- 注入 QueryRunner runner -->
+    <property name="runner" ref="runner"/>
+    <!-- 注入 connectionUtils （连接一致性控制） -->
+    <property name="connectionUtils" ref="connectionUtils"/>
+</bean>
+
+<!-- 创建 QueryRunner runner -->
+<bean id="runner" class="org.apache.commons.dbutils.QueryRunner" scope="prototype">
+    <!-- 指定数据源， QueryRunner 的源码定义的构造方法的参数是 ds -->
+    <constructor-arg name="ds" ref="dataSource"/>
+</bean>
+
+<!-- 创建 dataSource -->
+<bean id="dataSource" class="com.mchange.v2.c3p0.ComboPooledDataSource">
+    <!-- 连接数据库的必备信息 -->
+    <property name="driverClass" value="com.mysql.jdbc.Driver"/>
+    <property name="jdbcUrl" value="jdbc:mysql://localhost:3306/account?useUnicode=true&amp;characterEncoding=utf8"/>
+    <property name="user" value="peter"/>
+    <property name="password" value="peter@root"/>
+</bean>
+
+<!-- 创建 connectionUtils （连接一致性控制类） -->
+<bean id="connectionUtils" class="com.petersdemo.account.utils.ConnectionUtils">
+    <!-- 注入 dataSource -->
+    <property name="dataSource" ref="dataSource"/>
+</bean>
+
+<!-- 创建 txManager （提供 “事务控制” 增强操作的类） -->
+<bean id="txManager" class="com.petersdemo.account.utils.TransactionManager">
+    <!-- 注入 connectionUtils -->
+    <property name="connectionUtils" ref="connectionUtils"/>
+</bean>
+```
+注意，对于类似上例的编码习惯，将 BeanFactory 工厂类专门放置于一个模块的情况，需要在配置 bean.xml 的时候自动添加依赖扫描（防止找不到类的字节码）。
+```xml
+
+```
+
+### 3.2 AOP 形式的事务管理代码织入
+
+#### 1 基于接口的动态代理
+* 涉及的类： ***Proxy***
+* 提供者： Java 官方
+
+##### 使用方法
+```java
+
+```
+
+#### 2 基于子类的动态代理
+* 涉及的类： ***Enhancer***
+* 提供者： 第三方 cglib 库
+
+```xml
+<dependency>
+    <groupId>cglib</groupId>
+    <artifactId>cglib</artifactId>
+    <version>3.3.0</version>
+</dependency>
+```
+
+##### 使用方法
+```java
+
+```
