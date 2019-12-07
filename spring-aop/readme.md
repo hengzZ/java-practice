@@ -1725,15 +1725,75 @@ public ClassNameTest {
 ```
 
 ### 3.2 AOP 形式的事务管理代码织入
+动态代理：
+* 特点：字节码随用随创建，随用随加载。
+* 作用：不修改源码的基础上对方法增强（织入新操作）。
+
+分类：
+* 基于接口的动态代理
+* 基于子类的动态代理
 
 #### 1 基于接口的动态代理
 * 涉及的类： ***Proxy***
 * 提供者： Java 官方
 
+##### 创建代理对象的要求
+被代理类最少要实现一个接口，如果没有达标则不能使用。
+
 ##### 使用方法
 ```java
+/**
+ * 假设 Producer 是被代理的类，为它织入新操作。
+ */
+IProducer producer = new ProducerImpl();  //创建一个被增强类的实例
+IEnhancer enhancer = new EnhancerImpl();  //创建一个提供增强操作的类实例，以织入前置通知/后置通知/环绕通知/异常通知/最终通知。
 
+IProducer proxyProducer = (IProducer) Proxy.newProxyInstance(producer.getClass().getClassLoader(),
+                producer.getClass().getInterfaces(),
+                new InvocationHandler() {
+                    /**
+                     * 为 Producer 织入新操作
+                     * @param proxy   代理对象的引用
+                     * @param method  当前执行的方法
+                     * @param args    当前执行方法所需的参数
+                     * @return        和被代理对象方法有相同的返回值
+                     * @throws Throwable
+                     */
+                    @Override
+                    public Object invoke(Object proxy, Method method, Object[] args) throws Throwable {
+                        Object rtValue = null;
+                        try {
+                            //1.前置通知
+                            //2.执行操作
+                            rtValue = method.invoke(producer, args);
+                            //3.后置通知
+                            //4.返回结果
+                            return rtValue;
+                        } catch (Exception e) {
+                            //5.异常通知
+                            //6.抛出异常
+                            throw new RuntimeException(e);
+                        } finally {
+                            //7.最终通知
+                        }
+                    }
+                });
 ```
+
+##### Proxy.newProxyInstance 方法的参数
+* ClassLoader：类加载器
+  ```
+  它用于代理对象字节码的加载。要求和被代理对象使用相同的类加载器，因此写法固定。
+  ```
+* Class[]：字节码数组
+  ```
+  它用于让代理对象和被代理对象有相同方法，因此传入被代理对象的接口数组。写法固定。
+  ```
+* InvocationHandler：用于提供增强的代码
+  ```
+  一般都是写一个 InvocationHandler 接口的实现类，通常情况下都是匿名内部类，但不是必须的。
+  此接口的实现类都是谁用谁写。 AOP 编程的核心所在。
+  ```
 
 #### 2 基于子类的动态代理
 * 涉及的类： ***Enhancer***
@@ -1747,7 +1807,57 @@ public ClassNameTest {
 </dependency>
 ```
 
+##### 创建代理对象的要求
+被代理类不能是最终类。
+
 ##### 使用方法
 ```java
+/**
+ * 假设 Producer 是被代理的类，为它织入新操作。
+ */
+IProducer producer = new ProducerImpl();  //创建一个被增强类的实例
+IEnhancer enhancer = new EnhancerImpl();  //创建一个提供增强操作的类实例，以织入前置通知/后置通知/环绕通知/异常通知/最终通知。
 
+IProducer proxyProducer = (IProducer) Enhancer.create(producer.getClass(),
+                new MethodInterceptor() {
+                    /**
+                     * 为 Producer 织入新操作
+                     * @param proxy       代理对象的引用
+                     * @param method      当前执行的方法
+                     * @param args        当前执行方法所需的参数
+                     * @param methodProxy 当前执行方法的代理对象
+                     * @return            和被代理对象方法有相同的返回值
+                     * @throws Throwable
+                     */
+                    @Override
+                    public Object intercept(Object proxy, Method method, Object[] args, MethodProxy methodProxy) throws Throwable {
+                        Object rtValue = null;
+                        try {
+                            //1.前置通知
+                            //2.执行操作
+                            rtValue = method.invoke(producer, args);
+                            //3.后置通知
+                            //4.返回结果
+                            return rtValue;
+                        } catch (Exception e) {
+                            //5.异常通知
+                            //6.抛出异常
+                            throw new RuntimeException(e);
+                        } finally {
+                            //7.最终通知
+                        }
+                    }
+                });
 ```
+
+##### Ehancer.create 方法的参数
+* Class：字节码
+  ```
+  指定被代理对象的字节码。
+  ```
+* Callback：用于提供增强的代码
+  ```
+  一般都是写一个 Interceptor 接口的实现类，通常情况下都是匿名内部类，但不是必须的。
+  此接口的实现类都是谁用谁写。 AOP 编程的核心所在。
+  注意： 此处一般写的都是 Interceptor 接口的子接口类 MethodInterceptor 的实现类。
+  ```
