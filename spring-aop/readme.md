@@ -1618,12 +1618,15 @@ public class ProxyAccountServiceFactory implements IAccountServiceFactory {
 #### Spring IOC 配置，实现从工厂类创建代理对象的 Bean 并注入
 bean.xml
 ```xml
-<!-- 依赖扫描，装载被构造型注解（stereotype）所标注的类 -->
-
-<!-- 创建工厂类实例，proxyAccountServiceFactory -->
-
-<!-- 创建 AccountService 的代理 Bean 实例 proxyAccountService -->
-
+<!-- 创建工厂类实例 -->
+<bean id="proxyAccountServiceFactory" class="com.petersdemo.account.service.impl.ProxyAccountServiceFactoryImpl">
+    <!-- 注入被被代理类的实例 -->
+    <property name="accountService" ref="accountService"/>
+    <!-- 注入提供增强操作的类实例 -->
+    <property name="txManager" ref="txManager"/>
+</bean>
+<!-- 使用工厂，创建代理类 proxyAccountService -->
+<bean id="proxyAccountService" factory-bean="proxyAccountServiceFactory" factory-method="getAccountService"/>
 
 <!-- 创建 accountService -->
 <bean id="accountService" class="com.petersdemo.account.service.impl.AccountServiceImpl">
@@ -1666,6 +1669,8 @@ bean.xml
     <property name="connectionUtils" ref="connectionUtils"/>
 </bean>
 ```
+
+##### 注解 @ComponentScan
 注意，对于类似上例的编码习惯，将 BeanFactory 工厂类专门放置于一个模块的情况，需要在配置 bean.xml 的时候添加依赖扫描（防止Spring容器找不到类的字节码）。 ``注解 @ComponentScan 的作用就是根据指定的扫描路径，把符合扫描规则的类装载到 Spring 容器中。``
 ```
 默认情况下，<context:component-scan> 查找所有被构造型注解（stereotype）所标注的类，将被注解的类加入到 Spring 容器中。
@@ -1675,6 +1680,48 @@ bean.xml
   3. @Repository   dao    （用于标注数据访问组件，表明是dao的实现类）
   4. @Component    pojo    （把普通pojo实例化到spring容器中）
 综上，四种注解在语义上分别对应于：一般Java实现类（POJO）、控制器实现类、服务实现类、Dao实现类。
+```
+
+##### Spring 项目 Junit 测试报错 ClassNotFoundException 的问题
+问题出现的原因：在 maven 项目中运行 Junit，仅 Maven 的 Dependencies 依赖树中的 package 会被编译和加载，使用未在 Dependencies 依赖树中的类，会报 ClassNotFoundException 错误，因为它的字节码确实没有被加载（Junit 对字节码的加载是按 Dependencies 依赖树的）。
+
+解决方法：
+* 在 Junit 单元测试类所在项目的 pom.xml 文件中添加 dependency 依赖配置。
+* 检查下 dependency 的 scope 配置，如果是 provided 的话，一般极有可能引发 ClassNotFoundError。
+```
+# scope 的分类
+1. compile  - 默认就是 compile，什么都不配置也意味着 compile。表示被依赖项目需要参与当前项目的编译。
+2. test     - 表示被依赖项目仅仅参与测试相关的工作，仅参与测试代码的编译执行，如：junit。
+3. runtime  - 表示被依赖项目无需参与项目的编译，不过后续的测试和运行周期需要其参与。（与 compile 相比，跳过编译而已。）
+4. provided - 意味着打包的时候可以不用包进去。
+5. system   - 从参与度来说，与 provided 相同。不过被依赖项不会从 maven 仓库抓，而是从本地文件系统拿，因此需要配合 systemPath 属性使用。
+```
+
+综上，Junit 测试的配置过程为：pom.xml 中添加 dependency 依赖，推荐 compile scope 配置，编写测试代码如下：
+```java
+import org.junit.runner.RunWith;
+import org.springframework.test.context.ContextConfiguration;
+import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
+
+//单元测试类。 命名规则： 被测试Java类的名称 + Test
+@RunWith(SpringJUnit4ClassRunner.class)
+@ContextConfiguration(locations = {"classpath:bean.xml"})
+public ClassNameTest {
+
+    //单元测试函数。 命名规则： test + 被测函数的名称
+    @Test
+    public void testMethodName() {
+        // ...
+    }
+}
+```
+如果依赖项有问题（可通过 maven 的 dependencies 依赖树查看是否有异常），一定出现 ClassNotFoundException。 例如：
+```
+上例中，将 Junit 单元测试代码放置于 service 所在项目，创建的 factory 项目依赖于 service 项目，
+那么，现在在 service 项目中添加对 factory 的依赖，用于 Junit 单元测试。。结果肯定是依赖关系有问题，循环依赖。。
+解决方法：
+1. 将 factory 的代码放置于 service 项目，以消除循环依赖。
+2. 或者将 Junit 单元测试代码移出 service 项目，单独放置于一个独立项目，以消除循环依赖。
 ```
 
 ### 3.2 AOP 形式的事务管理代码织入
