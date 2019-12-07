@@ -1618,6 +1618,10 @@ public class ProxyAccountServiceFactory implements IAccountServiceFactory {
 #### Spring IOC 配置，实现从工厂类创建代理对象的 Bean 并注入
 bean.xml
 ```xml
+<!-- 依赖扫描，装载被构造型注解（stereotype）所标注的类 -->
+
+<!-- 创建工厂类实例，proxyAccountServiceFactory -->
+
 <!-- 创建 AccountService 的代理 Bean 实例 proxyAccountService -->
 
 
@@ -1662,9 +1666,15 @@ bean.xml
     <property name="connectionUtils" ref="connectionUtils"/>
 </bean>
 ```
-注意，对于类似上例的编码习惯，将 BeanFactory 工厂类专门放置于一个模块的情况，需要在配置 bean.xml 的时候自动添加依赖扫描（防止找不到类的字节码）。
-```xml
-
+注意，对于类似上例的编码习惯，将 BeanFactory 工厂类专门放置于一个模块的情况，需要在配置 bean.xml 的时候添加依赖扫描（防止Spring容器找不到类的字节码）。 ``注解 @ComponentScan 的作用就是根据指定的扫描路径，把符合扫描规则的类装载到 Spring 容器中。``
+```
+默认情况下，<context:component-scan> 查找所有被构造型注解（stereotype）所标注的类，将被注解的类加入到 Spring 容器中。
+# 常用的 stereotype 注解：
+  1. @Controller   控制器  （用于标注业务层组件，注入服务）
+  2. @Service      服务    （用于标注控制层组件，注入dao）
+  3. @Repository   dao    （用于标注数据访问组件，表明是dao的实现类）
+  4. @Component    pojo    （把普通pojo实例化到spring容器中）
+综上，四种注解在语义上分别对应于：一般Java实现类（POJO）、控制器实现类、服务实现类、Dao实现类。
 ```
 
 ### 3.2 AOP 形式的事务管理代码织入
