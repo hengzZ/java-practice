@@ -156,3 +156,40 @@ JavaScript Object Notation，JavaScript 对象表示法。
 
 ## 所谓单页面应用
 可以认为，单页面应用就是： 第一次与服务器端交互（请求）时，采用``页面跳转``，此后的所有请求都是``Ajax``。
+
+# 解决 chrome 阻止跨域方法
+
+跨域 ajax 被拦截示例：
+```
+Access to XMLHttpRequest at 'http://localhost:5000/mipsList/findAll' from origin 'null' has
+been blocked by CORS policy: No 'Access-Control-Allow-Origin' header is present on the requested resource.
+```
+
+很多情况下，开发人员的开发项目与服务器不在同一个环境下，此时 ajax 请求到数据，但并不会走 success 函数，而是在 error 里。
+``http 同源策略不允许跨域请求数据。``
+
+## 通过后端打开跨域权限
+#### flask 跨域访问授权
+```bash
+pip install -U flask-cors
+```
+```python
+from flask import Flask, jsonify
+from flask_cors import CORS
+
+app = Flask(__name__,
+            static_folder = "../dist/static",
+            template_folder = "../dist")
+cors = CORS(app, resources={"/api/*": {"origins": "*"}})  # 跨域授权
+
+@app.route('/api/number')
+def api_number():
+    response = {
+        'number': 100
+    }
+    return jsonify(response)
+
+if __name__ == "__main__":
+    app.debug = True
+    app.run()
+```
