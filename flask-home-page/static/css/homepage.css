@@ -1,0 +1,72 @@
+.container {
+	display: grid;
+	grid-template-columns: repeat(10, 1fr);
+	grid-template-rows: 50px, 350px, 50px;
+}
+header {
+	grid-column: 1 / span 10; /* 从第 1 列开始， 合并后面的 10 列 */
+	grid-row: 1 / span 1;     /* 注意，合并的时候 row 和 column 都要用 span 表示 */
+}
+.container > .content {
+	grid-column: 1 / span 10;
+	grid-row: 2 / span 1;
+}
+footer {
+	grid-column: 1 / span 10;
+	grid-row: 3 / span 1;
+}
+footer {
+	display: grid;
+	grid-template-columns: auto;
+	grid-template-rows: 4px, 20px, 20px, 6px;
+}
+footer > .copyright {
+	grid-column: 1 / span 1;
+	grid-row: 2 / span 1;
+}
+footer > .public-record-id {
+	grid-column: 1 / span 1;
+	grid-row: 3 / span 1;
+}
+
+header {
+	display: -webkit-box;      /* OLD - iOS 6-, Safari 3.1-6 */
+	display: -moz-box;         /* OLD - Firefox 19- (buggy but mostly works) */
+	display: -ms-flexbox;      /* TWEENER - IE 10 */
+	display: -webkit-flex;     /* NEW - Chrome */
+	display: flex;             /* NEW, Spec - Opera 12.1, Firefox 20+ */
+}
+header > a:nth-child(2) {
+	margin-left: auto;
+	margin-right: 5px;
+}
+
+footer > .copyright {
+	display: -webkit-box;      /* OLD - iOS 6-, Safari 3.1-6 */
+	display: -moz-box;         /* OLD - Firefox 19- (buggy but mostly works) */
+	display: -ms-flexbox;      /* TWEENER - IE 10 */
+	display: -webkit-flex;     /* NEW - Chrome */
+	display: flex;             /* NEW, Spec - Opera 12.1, Firefox 20+ */
+	-webkit-justify-content: center;
+	-moz-justify-content: center;
+	-ms-justify-content: center;
+	justify-content: center;
+}
+
+footer > .public-record-id {
+	display: -webkit-box;      /* OLD - iOS 6-, Safari 3.1-6 */
+	display: -moz-box;         /* OLD - Firefox 19- (buggy but mostly works) */
+	display: -ms-flexbox;      /* TWEENER - IE 10 */
+	display: -webkit-flex;     /* NEW - Chrome */
+	display: flex;             /* NEW, Spec - Opera 12.1, Firefox 20+ */
+	-webkit-justify-content: center;
+	-moz-justify-content: center;
+	-ms-justify-content: center;
+	justify-content: center;
+}
+
+header a {
+	color: black;
+}
+
+/* for browser support: please refer https://dev.opera.com/articles/advanced-cross-browser-flexbox/#fallbacks */
