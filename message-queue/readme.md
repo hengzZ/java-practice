@@ -83,6 +83,7 @@
   ```
 
 ###### 现在，计算请求的最大吞吐量
+
 ```
 假设，注册和发送，每个都是需要 50 毫秒，则串行方式需要 150 毫秒，并行方式需要 100 毫秒。
 串行方式的最大吞吐量 = 1000/150 = 7 次/秒。
@@ -111,6 +112,7 @@
 
 使用消息队列的方式
 <div align="center"><img src="pics/applicaiton-decoupling.png" width="35%"></div>
+
 ```
 # 订单系统： 当用户下单后，订单系统完成持久化处理，将消息写入消息队列，返回用户订单下单成功。
 # 库存系统： 订阅下单的消息，采用拉/推的方式，获取下单信息，库存系统根据下单信息，进行库存操作。 
@@ -125,6 +127,7 @@
 
 使用消息队列的方式
 <div align="center"><img src="pics/peak-flow-cutting.png" width="40%"></div>
+
 ```
 一般需要在应用前端（业务处理的前端）加入消息队列。
 1. 可以控制活动的人数；
@@ -141,6 +144,7 @@
 
 使用消息队列的方式
 <div align="center"><img src="pics/log-processing.png" width="40%"></div>
+
 ```
 日志采集客户端，负责日志数据采集，定时写受写入 Kafka 队列；
 Kafka 消息队列，负责日志数据的接收，存储和转发；
@@ -161,21 +165,99 @@ Kafka 消息队列，负责日志数据的接收，存储和转发；
 
 使用消息队列进行通讯，比直接通讯有更好的鲁棒性和用户体验。（例如对方下线的情形，不影响在线方发消息。）
 
-
+<br>
 <br>
 
 ## RabbitMQ 
 
+###### RabbitMQ 提供了 6 种消息模型，但是第 6 种其实是 RPC，并不是 MQ。 另外，3、4、5 这三种都属于订阅模型，只不过是进行路由的方式不同。
 
+<div align="center"><img src="pics/rabbit-mq.png" width="55%"></div>
 
+> 你可以把它想象成一个邮局：当你把邮件放在邮箱里时，你是可以确定邮差先生最终会把邮件发送给你的收件人的。
 
+<br>
 
+#### 消息确认机制（ACK）
+
+> RabbitMQ 怎么知道消息被接收了呢？
+* 如果消费者领取消息后，还没执行操作就挂掉了呢？
+* 如果执行过程中抛出了异常呢？
+
+因此，RabbitMQ 有一个 ACK 机制。当消费者获取消息后，会向 RabbitMQ 发送回执 ACK，以告知消息已经被接收。
+
+##### 不过这种回执ACK分两种情况：
+- 自动ACK：消息一旦被接收，消费者自动发送ACK。
+- 手动ACK：消息接收后，不会发送ACK，需要手动调用。（这样就可以保证宕机不应答）
+
+> 如果消息不太重要，丢失也没有影响，那么自动ACK会比较方便。 <br>
+> 如果消息非常重要，不允许丢失。那么最好在消费完成后手动ACK。
+
+<br>
+
+#### 消息模型
+—— 永远要注意！在网络请求的短暂HTTP请求窗口中是无法处理复杂的任务。
+
+##### 1.基本消息模型
+simple_queue 示例
+
+##### 2.work消息模型（竞争消费）
+—— 这个概念在Web应用程序中特别有用！ work_queue 示例
+
+> 以上两种模型背后的假设都是：每个任务只被传递给一个工作人员！！！
+
+##### 3.X（Exchanges）
+交换机递交消息给某个特别队列、递交给所有队列、或是将消息丢弃。到底如何操作，取决于Exchange的类型。
+- Fanout：广播，将消息交给所有绑定到交换机的队列。
+- Direct：定向，把消息交给符合指定 routing key（关键字）的队列。
+- Topic：通配符，把消息交给符合 routing pattern（路由模式）的队列。
+
+``Direct与Topic的差异是字面值和通配符的差异。``
+
+Exchange（交换机）只负责转发消息，不具备存储消息的能力，因此，如果没有任何队列与 Exchange 绑定，那么消息会丢失！
+
+> 这一部分，则是传递同一个信息给多个消费者，被称为 “发布/订阅”。 <br>
+> 1.每一个消费者都有自己的一个队列。  <br>
+> 2.生产者没有将消息直接发送到队列，而是发送到了交换机。
+
+注意！生产者发送的消息，只能发送到交换机。。交换机来决定要发给哪个队列，生产者无法决定！
+
+<br>
+
+### 持久化
+
+> 如何避免消息丢失？
+* 如果在消费者消费消息之前，MQ宕机了怎么办？
+
+**想要将消息持久化，前提是：Message、Queue、Exchange 都持久化！！**
+
+##### 交换机持久化
+```java
+Channel channel = connection.createChannel();
+channel.exchangeDeclare(EXCHANGE_NAME, "topic", true);  //交换机持久化(第3个参数)
+```
+
+##### 队列持久化
+```java
+Channel channel = connection.createChannel();
+channel.queueDeclare(QUEUE_NAME, true, false, false, null);  //队列持久化(第2个参数)
+```
+
+##### 消息持久化
+```java
+channel.basicPublish(EXCHANGE_NAME, key, MessageProperties.PERSISTENT_TEXT_PLAIN, message.getBytes());  //消息持久化(第3个参数)
+```
+
+现在，即使任一机器宕机了，重启机器就好，最后一刻的状态还在。
+
+<br>
 <br>
 
 ## 消息中间件的生产环境使用示例
 
 #### 3.1 电商系统
 <div align="center"><img src="pics/e-commerce-system.jpeg" width="40%"></div>
+
 电商系统的消息队列，一般采用高可用、可持久化的消息中间件。 比如 ActiveMQ，RabbitMQ，RocketMQ。
 ```
 1) 应用将主干逻辑处理完成后，写入消息队列。 关于消息发送是否成功，可以开启消息的确认模式。
@@ -187,6 +269,7 @@ Kafka 消息队列，负责日志数据的接收，存储和转发；
 
 #### 3.2 日志收集系统（大数据）
 <div align="center"><img src="pics/log-collection-system.jpeg" width="45%"></div>
+
 一个日志收集系统分为： Zookeeper 注册中心、日志收集客户端、Kafka 集群、Storm 集群（OtherApp），共四部分组成。
 ```
 1) Zookeeper 注册中心，提出负载均衡和地址查找服务。
@@ -194,6 +277,8 @@ Kafka 消息队列，负责日志数据的接收，存储和转发；
 ```
 
 <br>
+<br>
+
 
 ## JMS 消息服务
 ###### 讲消息队列就不得不提 JMS（JAVA Message Service, JAVA 消息服务）。
@@ -212,6 +297,7 @@ JMS API 是一个消息服务的标准/规范，允许应用程序组件基于 J
 
 ##### 4.1 P2P 模式
 <div align="center"><img src="pics/p2p-message-model.png" width="40%"></div>
+
 P2P 模式包含三个角色：
 * 消息队列（Queue）
 * 发送者(Sender)
@@ -230,6 +316,7 @@ P2P 模式的特点：
 
 ##### 4.2 Pub/Sub 模式
 <div align="center"><img src="pics/pub-sub-message-model.jpeg" width="38%"></div>
+
 Pub/Sub 模式也包含三个角色：
 * 主题（Topic）
 * 发布者（Publisher）
@@ -445,6 +532,7 @@ Kafka 的高吞吐量特性：
 ### 案例： 大数据分析
 新浪 Kafka 日志处理应用案例
 <div align="center"><img src="pics/sample-of-kafka-log-processing.jpeg" width="55%"></div>
+
 ```
 1) Kafka： 接收用户日志的消息队列。
 2) Logstash： 做日志解析，统一成 JSON 输出给 Elasticsearch。 （注意！！）
