@@ -3,8 +3,37 @@
 
 什么是消息队列？ 消息队列是软件/服务治理的一种手段，操作系统就是通过消息队列来向各软件发送消息（输入设备的触发消息），进行软件/服务治理。
 
+<br>
+
+> **消息队列（MQ）是一种应用程序对应用程序的通信方法。应用程序通过读写出入队列的消息来通信。无需专用连接来链接彼此。``消息队列是典型的：生产者、消费者模型。``**
+
+> **MQ是消息通信的模型，并不是具体实现。现在实现MQ的有两种主流方式：AMQP、JMS。** <br>
+> 而所谓的主流实现方式，即指定明确规范的通信协议。如：
+
+<br>
+
+```
+▪ AMQP
+  - 即Advanced Message Queuing Protocol，一个提供统一消息服务的应用层标准高级消息队列协议，
+    是应用层协议的一个开放标准，为面向消息的中间件设计。
+  - 基于此协议的客户端与消息中间件可传递消息，并不受客户端/中间件不同产品，不同的开发语言等条件的限制！！！
+  - Erlang中的实现有RabbitMQ等。
+▪ JMS
+  - 即Java Message Service，是Java平台中关于面向消息中间件（MOM）的API，由Sun公司提出的消息标准，
+    是一个与具体平台无关的API，绝大多数消息中间件供应商都对JMS提供支持。
+▪ 两者的区别和联系：
+  - JMS是定义了统一的接口，是对消息操作（OP）进行统一；
+  - AMQP是通过规定协议，是对数据交互的格式（Protocol）进行统一；
+  - 语言方面，JMS限定了必须使用Java语言；
+  - AMQP只是协议，不规定实现方式，因此是跨语言的；
+  - 通信模型方面，JMS规定了两种消息模型；
+  - 而AMQP的消息模型更加丰富。
+```
+
+<br>
 
 #### 1. 消息队列概述
+
 消息队列中间件是分布式系统中重要的组件。 ``是所有大型分布式系统不可缺少的中间件。``
 
 主要为了解决的问题：
@@ -16,16 +45,24 @@
 
 以实现高性能，高可用，可伸缩和最终一致性的架构。
 
-##### 目前在生产环境，使用较多的消息队列有：
-* ActiveMQ
-* RabbitMQ
-* ZeroMQ
-* Kafka
-* MetaMQ
-* RocketMQ 等。
+<br>
+
+##### 目前，消息服务器的同类软件有：
+* ActiveMQ - JMS消息服务器
+* RabbitMQ - AMQP消息服务器
+* ZeroMQ   -
+* Kafka    - 分布式发布订阅消息系统，高吞吐量
+* Jafka    - 分布式消息系统
+* MetaMQ   -
+* RocketMQ - 基于JMS，阿里巴巴产品
+* beanstalkd - 轻量级消息队列
+* DotNetMQ   - .Net消息中间件
+* Metamorphosis - 分布式消息中间件
+* NSQ - 开源消息系统
 
 思考，为什么会有这么多种消息队列？
 
+<br>
 
 #### 2. 消息队列的应用场景
 异步处理，应用解耦，流量削峰，日志处理和消息通讯五个场景。 （五大场景）
@@ -74,7 +111,6 @@
 
 使用消息队列的方式
 <div align="center"><img src="pics/applicaiton-decoupling.png" width="35%"></div>
-
 ```
 # 订单系统： 当用户下单后，订单系统完成持久化处理，将消息写入消息队列，返回用户订单下单成功。
 # 库存系统： 订阅下单的消息，采用拉/推的方式，获取下单信息，库存系统根据下单信息，进行库存操作。 
@@ -89,7 +125,6 @@
 
 使用消息队列的方式
 <div align="center"><img src="pics/peak-flow-cutting.png" width="40%"></div>
-
 ```
 一般需要在应用前端（业务处理的前端）加入消息队列。
 1. 可以控制活动的人数；
@@ -106,7 +141,6 @@
 
 使用消息队列的方式
 <div align="center"><img src="pics/log-processing.png" width="40%"></div>
-
 ```
 日志采集客户端，负责日志数据采集，定时写受写入 Kafka 队列；
 Kafka 消息队列，负责日志数据的接收，存储和转发；
@@ -120,20 +154,29 @@ Kafka 消息队列，负责日志数据的接收，存储和转发；
 
 使用消息队列进行通讯：
 * 点对点通讯
-  <div align="center"><img src="pics/point-to-point-communication.png" width="40%"></div>
+<div align="center"><img src="pics/point-to-point-communication.png" width="40%"></div>
 
 * 聊天室通讯
-  <div align="center"><img src="pics/chat-room-communication.png" width="40%"></div>
+<div align="center"><img src="pics/chat-room-communication.png" width="40%"></div>
 
 使用消息队列进行通讯，比直接通讯有更好的鲁棒性和用户体验。（例如对方下线的情形，不影响在线方发消息。）
 
 
-#### 3. 消息中间件的生产环境使用示例
+<br>
 
-##### 3.1 电商系统
+## RabbitMQ 
+
+
+
+
+
+<br>
+
+## 消息中间件的生产环境使用示例
+
+#### 3.1 电商系统
 <div align="center"><img src="pics/e-commerce-system.jpeg" width="40%"></div>
-
-电商系统的消息队列，一般采用高可用、可持久化的消息中间件。 比如 Active MQ，Rabbit MQ，Rocket MQ。
+电商系统的消息队列，一般采用高可用、可持久化的消息中间件。 比如 ActiveMQ，RabbitMQ，RocketMQ。
 ```
 1) 应用将主干逻辑处理完成后，写入消息队列。 关于消息发送是否成功，可以开启消息的确认模式。
    （消息队列返回消息接收成功状态后，应用再返回，这样保障消息的完整性。）
@@ -142,34 +185,33 @@ Kafka 消息队列，负责日志数据的接收，存储和转发；
    比如: 主数据写入数据库，扩展应用则根据消息队列，并结合数据库实现基于消息队列的后续处理。
 ```
 
-##### 3.2 日志收集系统（大数据）
+#### 3.2 日志收集系统（大数据）
 <div align="center"><img src="pics/log-collection-system.jpeg" width="45%"></div>
-
 一个日志收集系统分为： Zookeeper 注册中心、日志收集客户端、Kafka 集群、Storm 集群（OtherApp），共四部分组成。
 ```
 1) Zookeeper 注册中心，提出负载均衡和地址查找服务。
 2) 日志收集客户端，用于采集应用系统的日志，并将数据推送到 Kafka 队列。
 ```
 
+<br>
 
-#### 4. JMS 消息服务
-###### 讲消息队列就不得不提 JMS(JAVA Message Service, JAVA 消息服务)。
+## JMS 消息服务
+###### 讲消息队列就不得不提 JMS（JAVA Message Service, JAVA 消息服务）。
 
 JMS API 是一个消息服务的标准/规范，允许应用程序组件基于 JavaEE 平台创建、发送、接收和读取消息。
 ```
 它使分布式通信耦合度更低，消息服务更加可靠以及异步性。
-在 EJB(Enterprise JavaBean) 架构中，有消息 bean 可以无缝的与 JM 消息服务集成。
+在 EJB(Enterprise JavaBean) 架构中，消息 bean 可以无缝的与 JM 消息服务集成。
 在 J2EE 架构模式中，有消息服务者模式，用于实现消息与应用直接的解耦。
 ```
 
-##### 消息模型
+##### JMS 的消息模型
 在 JMS 标准中，有两种消息模型:
 * P2P (Point to Point)
 * Publish/Subscribe (Pub/Sub)
 
 ##### 4.1 P2P 模式
 <div align="center"><img src="pics/p2p-message-model.png" width="40%"></div>
-
 P2P 模式包含三个角色：
 * 消息队列（Queue）
 * 发送者(Sender)
@@ -188,7 +230,6 @@ P2P 模式的特点：
 
 ##### 4.2 Pub/Sub 模式
 <div align="center"><img src="pics/pub-sub-message-model.jpeg" width="38%"></div>
-
 Pub/Sub 模式也包含三个角色：
 * 主题（Topic）
 * 发布者（Publisher）
@@ -208,10 +249,12 @@ Pub/Sub 模式的特点：
 
 如果希望发送的消息： 可以不被做任何处理、只被一个消费者处理、被多个消费者处理，需要多种选择的话，请采用 Pub/Sub 模式。
 
-##### 4.3 消息消费
-在 JMS 中，消息的产生和消费都是异步的。
+<br>
 
-对于消费来说，JMS 的消费者可以通过两种方式来消费：
+## 消息如何消费
+###### 在 JMS 中，消息的产生和消费都是异步的。
+
+但是对于消费者来说，JMS 的消费者可以通过两种方式来消费：
 * 同步
   ```
   订阅者(接收者) 通过 receive 方法来接收消息，receive 方法在接收到消息之前（或超时之前）将一直阻塞。
@@ -221,7 +264,9 @@ Pub/Sub 模式的特点：
   订阅者(接收者) 注册为一个消息监听器，当消息到达后，系统自动调用监听器的 onMessage 方法。
   ```
 
-##### 4.4 JMS 编程模型
+<br>
+
+## JMS 编程模型
 * ConnectionFactory
   ```
   创建 Connection 对象的工厂，针对两种不同的 JMS 消息模型，分别有：
@@ -263,8 +308,10 @@ Pub/Sub 模式的特点：
 
 深入学习 JMS 对掌握 JAVA 架构，EJB 架构有很好的帮助，消息中间件也是大型分布式系统必须的组件。
 
+<br>
+<br>
 
-#### 5. 常用的消息队列 （对比分析）
+# 常用的消息队列 （对比分析）
 
 一般的商用容器，比如 WebLogic，JBoss，都支持 JMS 标准，开发上就会很方便。 免费的比如 Tomcat，Jetty 等，则需要使用第三方的消息中间件。
 
@@ -274,7 +321,7 @@ Pub/Sub 模式的特点：
 * ZeroMQ
 * Kafka 等。
 
-##### 5.1 ActiveMQ
+#### 5.1 ActiveMQ
 ###### Apache 出品，最流行的，能力强劲的开源消息总线。
 
 ActiveMQ 是一个完全支持 JMS1.1 和 J2EE 1.4 规范的 JMS Provider 实现，尽管 JMS 规范出台时间已经很久，但是 JMS 在当今的 J2EE 应用中间仍然扮演着特殊的地位。
@@ -294,7 +341,7 @@ ActiveMQ 的特性：
 10. 可以很容易得调用内嵌 JMS provider，进行测试。
 ```
 
-##### 5.2 RabbitMQ
+#### 5.2 RabbitMQ
 ###### RabbitMQ 是流行的开源消息队列系统，用 erlang 语言开发。
 
 RabbitMQ 是 AMQP（高级消息队列协议）的标准实现。
@@ -306,7 +353,7 @@ RabbitMQ 的特性：
 3. 用于在分布式系统中存储转发消息，在易用性、扩展性、高可用性等方面表现不俗。
 ```
 
-##### 5.3 ZeroMQ
+#### 5.3 ZeroMQ
 ###### 号称史上最快的消息队列，它实际是类似于 Socket 的一系列接口。
 
 ZeroMQ 与 Socket 的区别： ``普通的 Socket 是端到端的（1:1的关系），而 ZMQ 却是可以 N：M 的关系。``
@@ -342,11 +389,11 @@ ZeroMQ 高性能设计的要点：
 3. 多核下的线程绑定，ZeroMQ 充分利用多核的优势，每个核绑定运行一个工作者线程，避免多线程之间的 CPU 切换开销。
 ```
 
-##### 5.4 Kafka
+#### 5.4 Kafka
 ###### Kafka 是一种高吞吐量的分布式发布订阅（Pub/Sub）消息系统。
 
-Kafka 是针对已达到消费者规模的网站，处理网站中的所有动作流数据。 而这些动作（即：网页浏览，搜索和其他用户的行动）是现代网络上的许多社会功能的一个关键因素。
-``这些数据通常是由于吞吐量的要求，而通过处理日志和日志聚合来解决。``
+Kafka 是针对已达到消费规模的网站，处理网站中的所有动作流数据。 而这些动作（即：网页浏览，搜索和其他用户的行动）是现代网络上的许多社会功能的一个关键因素。
+``这些数据通常由于吞吐量的要求，需要通过处理日志和日志聚合来解决。``
 
 对于像 Hadoop 一样的日志数据和离线分析系统，对于其要求实时处理的限制，这是一个可行的解决方案。
 Kafka 通过 Hadoop 的并行加载机制来统一线上和离线的消息处理，通过集群机来提供实时的消费。
@@ -361,11 +408,11 @@ Kafka 的高吞吐量特性：
 ```
 
 ##### Kafka 相关概念
-* Broker
+* **Broker**
   ```
   Kafka 集群包含一个或多个服务器，这种服务器被称为 broker。
   ```
-* Topic
+* **Topic**
   ```
   每条发布到 Kafka 集群的消息都有一个类别，这个类别被称为 Topic。
   (物理上不同 Topic 的消息分开存储，逻辑上一个 Topic 的消息虽然保存于一个或多个 broker 上，
@@ -375,11 +422,11 @@ Kafka 的高吞吐量特性：
   ```
   Parition 是物理上的概念，每个 Topic 包含一个或多个 Partition。
   ```
-* Producer
+* **Producer**
   ```
   负责发布消息到 Kafka broker。
   ```
-* Consumer
+* **Consumer**
   ```
   消息消费者，向 Kafka broker 读取消息的客户端。
   ```
@@ -392,15 +439,15 @@ Kafka 的高吞吐量特性：
 一般应用在大数据日志处理，或对实时性（少量延迟）、可靠性（少量丢数据）要求稍低的场景使用。
 
 <br>
+<br>
 
-附录：
+**附录：**
 ### 案例： 大数据分析
 新浪 Kafka 日志处理应用案例
 <div align="center"><img src="pics/sample-of-kafka-log-processing.jpeg" width="55%"></div>
-
 ```
 1) Kafka： 接收用户日志的消息队列。
-2) Logstash： 做日志解析，统一成 JSON 输出给 Elasticsearch。
+2) Logstash： 做日志解析，统一成 JSON 输出给 Elasticsearch。 （注意！！）
 3) Elasticsearch： 实时日志分析服务的核心技术，一个 schemaless，实时的数据存储服务，通过 index 组织数据，兼具强大的搜索和统计功能。
 4) Kibana： 基于 Elasticsearch 的数据可视化组件，超强的数据可视化能力是众多公司选择 ELK stack 的重要原因。
 ```
