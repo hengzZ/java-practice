@@ -26,7 +26,7 @@ app = Flask(__name__)
 def setEureka():
     server_host = "localhost"
     server_port = 8088
-    eureka_client.init(eureka_server="http://localhost:1111/eureka",
+    eureka_client.init(eureka_server="http://localhost:10086/eureka",
                        app_name="flask_server",
                        #当前组件的主机名为可选参数，如果不填写会自动计算一个，
                        #如果服务和 eureka 服务器部署在同一台机器，请必须填写，否则会计算出 127.0.0.1。
@@ -44,5 +44,5 @@ def hello_world():
 
 
 if __name__ == '__main__':
-    app.run(debug=True, threaded=True, port=5000, host="0.0.0.0")
+    app.run(debug=True, threaded=True, port=8088, host="0.0.0.0")
 ```
