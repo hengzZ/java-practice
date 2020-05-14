@@ -112,3 +112,52 @@ Any claim arising under or relating to this Agreement shall be governed by the i
 #### Others
 
 - Patents and Other IP For Engineer ``The purpose is to train engineers and managers to understand the complexities of dealing with intellectual property (ip), and to teach them how to assist intel in building a strong portfolio of patents to protect our current and future products. The course is a blend of perspectives from both research and development, as well as from legal and industry viewpoints.``
+
+<br>
+
+## Part III —— Software is Intellectual Property
+
+#### 1 What is Intellectual Property?
+
+Most of Intel's valuation is based on intellectual property - we need to protect out key asset!  Intellectual property, or IP, refers to **creations of the mind**, such as inventions; literary and artistic works; designs; and symbols, names and images used in commerce.
+
+##### Types of intellectual property generally include:
+
+- **Copyright** - The rights that creators have over their literary and artistic works.  Works covered by copyright range from books, music, films, to computer programs and databases.
+- **Patent** - The exclusive right granted for an invention, which is a product or a process that provides, in general, a new way of doing something, or offers a new technical solution to a problem.
+- **Trademark** - A sign capable of distinguishing the goods or services of one enterprise from those of other enterprises.
+
+（注意，版权/IP、专利、商标是三个相互独立的核心概念。）
+
+#### 2 Software Licenses
+
+Software Licenses grant certain rights by defining the conditions for use. In the case of a developer who copies some code, it’s possible that the license for the copied code may permit re-use under certain conditions – for example, with a stipulation that the original author be credited.  It’s also possible that the license prohibits copying the code.
+
+Intel must obtain valid licenses from licensors that sufficiently enable the intended software use and distribution within their scope.
+
+##### License Types
+
+- **Copyleft** - Sometimes also called "Reciprocal" licenses, they follow all open source licensing principles and require the larger work to be released under the same copyleft license.  Example: GPL.
+- **Weak CopyLeft** - Similar to copyleft licenses, but some uses do not require larger work to be released under the same copyleft license.  Example: Less GPL (LGPL).
+- **Permissive** - Follow all open source licensing principles but in contrary to Copyleft licenses, they often do not require the larger work to be released under the same license provided that it retains all copyright notices and copy of original license.  Example: BSD, Apache, MIT.
+- **Proprietary** - Sometimes also called "Commercial" licenses, they are the most restrictive licenses often with payment requirements, limited or no copying allowed, no rights to modify or reverse engineer.
+
+#### 3 Inbound vs. Outbound Licenses
+
+A 3rd party license we incur is called an inbound license, or IBL. Inbound licenses define the obligations and restrictions for their existing IP that Intel must comply with in order to utilize the existing IP.
+
+In contrast, the outbound license, or OBL, grants our customer the rights to use, modify, or distribute software from Intel.  Intel outbound licenses generally are structured to meet a business requirement and must be approved by Intel Legal.
+
+（被授权和授权）
+
+#### 4 License Obligations
+
+Licenses grant rights and comes with conditions.  We call those conditions **obligations**.  Obligations are what you *must do* and what you *must not do*.
+
+All applicable third-party license obligations being distributed must be met prior to each software distribution from Intel.
+
+#### 5 License Compatibility
+
+Licenses from different pieces of software being distributed together must be aligned on their conditions or obligations.  Otherwise this could create a license conflict, or license compatibility issue. （代码扫描的缘由所在。）
+
+There must be no conflict(s) between any licenses (inbound or outbound) included in the distribution from Intel.
