@@ -161,3 +161,31 @@ All applicable third-party license obligations being distributed must be met pri
 Licenses from different pieces of software being distributed together must be aligned on their conditions or obligations.  Otherwise this could create a license conflict, or license compatibility issue. （代码扫描的缘由所在。）
 
 There must be no conflict(s) between any licenses (inbound or outbound) included in the distribution from Intel.
+
+<br>
+
+## Part IV —— Legal Risk and Loss
+
+#### 1 SWLC relates to three of Intel's five principles of conduct：
+
+- *__Conduct business with honesty and integrity__. Conduct business with uncompromising integrity and professionalism, demonstrating honesty and high ethical standards in all business  dealings and treating customers, suppliers, distributors, and others with fairness, honesty and respect.*
+- *__Follow the letter and spirit of the law__. Ensure that business decisions comply with all applicable laws and regulations of the many countries in which Intel does business.*
+- *__Protect the company’s assets and confidential information__. Protect the value of Intel’s assets, including physical assets, intellectual property, confidential information, Intel brands, and its name and reputation as well as the confidentiality of information of our customers, suppliers and employees.*
+
+（大道理。。）
+
+#### 2 价值时间曲线
+
+<div align="center">
+<img src="value-time-and-legal.png" width="60%">
+</div>
+
+（不太理解。。）
+
+#### 3 风险
+
+<div align="center">
+<img src="risks.png" width="60%">
+</div>
+
+（不听老人言，一夜回到解放前！）
