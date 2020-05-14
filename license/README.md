@@ -97,3 +97,18 @@ The Materials are provided with "RESTRICTED RIGHTS". Use, duplication or disclos
 Any claim arising under or relating to this Agreement shall be governed by the internal substantive laws of the State of Delaware, without regard to principles of conflict of laws.  You may not export the Materials in violation of applicable export laws.
 
 ##### 10. XXXX
+
+<br>
+
+## Part II —— Software Legal Compliance
+
+#### 核心内容
+
+- SWLC: Software Legal Compliance Basics ``This course provides an overview of Software Legal Compliance practices.``
+- SWLC: Protex ``Protex is Intel’s enterprise tool for auditing legal compliance of software. The course provides an overview of tool capabilities including creating projects, running scans, analyzing and dispositioning scan results, and generating scan reports. By the end of the training, learners should understand how to achieve a clean scan of software in Protex.``
+- SWLC: IP Planning `` Learn the process to create and approve an IP Plan. Step through the sections of an IP Plan including authorized content, licenses, license obligations, export control, and Open Source PDT approval. Examine Certificates of Originality, approving an IP Plan, and reviewing an IP Plan with a software development team.``
+- Legal Education: Open Source and Intel ``Educates software engineers on the legal issues associated with open source software licensing and how Intel approaches open source licensing.``
+
+#### Others
+
+- Patents and Other IP For Engineer ``The purpose is to train engineers and managers to understand the complexities of dealing with intellectual property (ip), and to teach them how to assist intel in building a strong portfolio of patents to protect our current and future products. The course is a blend of perspectives from both research and development, as well as from legal and industry viewpoints.``
