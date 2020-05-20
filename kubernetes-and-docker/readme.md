@@ -105,4 +105,303 @@ Docker 是第一个使容器能在不同机器之间移植的系统。它不仅�
 
 
 
-## Docker
+# Docker
+
+Docker 是一个开源的应用容器引擎，基于 Go 语言 并遵从 Apache2.0 协议开源。
+
+Docker 可以让开发者打包他们的应用以及依赖包到一个轻量级、可移植的容器中，然后发布到任何流行的 Linux 机器上，也可以实现虚拟化。
+
+### 1 Docker 架构
+
+Docker 包括三个基本概念
+- **镜像（Image）**：Docker 镜像（Image），就相当于是一个 root 文件系统。比如官方镜像 ubuntu:16.04 就包含了完整的一套 Ubuntu16.04 最小系统的 root 文件系统。
+- **容器（Container）**：镜像（Image）和容器（Container）的关系，就像是面向对象程序设计中的类和实例一样，镜像是静态的定义，容器是镜像运行时的实体。容器可以被创建、启动、停止、删除、暂停等。
+- **仓库（Repository）**：仓库可看着一个代码控制中心，用来保存镜像。
+
+Docker 使用客户端-服务器 (C/S) 架构模式，使用远程 API 来管理和创建 Docker 容器。
+
+```
+- Docker 镜像是用于创建 Docker 容器的模板，比如 Ubuntu 系统。
+- Docker 客户端通过命令行或者其他工具使用 Docker SDK 与 Docker 的守护进程通信。
+- Docker Machine 是一个简化 Docker 安装的命令行工具，通过一个简单的命令行即可在相应的平台上安装 Docker，
+  比如 VirtualBox、 Digital Ocean、Microsoft Azure。
+```
+
+### 2 Docker 安装
+
+Docker 的旧版本被称为 docker，docker.io 或 docker-engine 。如果已安装，请卸载它们：
+``` bash
+$ sudo yum remove docker \
+                  docker-client \
+                  docker-client-latest \
+                  docker-common \
+                  docker-latest \
+                  docker-latest-logrotate \
+                  docker-logrotate \
+                  docker-engine
+```
+
+使用 Docker 仓库安装 Docker Engine-Community
+``` bash
+$ sudo yum install -y yum-utils \
+  device-mapper-persistent-data \
+  lvm2
+```
+``` bash
+$ sudo yum-config-manager \
+    --add-repo \
+    https://download.docker.com/linux/centos/docker-ce.repo
+```
+``` bash
+$ sudo yum install docker-ce docker-ce-cli containerd.io
+```
+
+要安装特定版本的 Docker Engine-Community，请在存储库中列出可用版本，然后选择并安装：
+``` bash
+$ yum list docker-ce --showduplicates | sort -r
+$ sudo yum install docker-ce-<VERSION_STRING> docker-ce-cli-<VERSION_STRING> containerd.io
+```
+
+### 3 启动 Docker
+
+``` bash
+$ sudo systemctl start docker
+```
+
+通过运行 hello-world 映像来验证是否正确安装了 Docker Engine-Community 。
+``` bash
+$ sudo docker run hello-world
+```
+
+### 4 Docker — Hello World
+
+Docker 允许你在容器内运行应用程序， 使用 docker run 命令来在容器内运行一个应用程序。
+``` bash
+runoob@runoob:~$ docker run ubuntu:15.10 /bin/echo "Hello world"
+Hello world
+```
+
+- docker: Docker 的二进制执行文件。
+- run: 与前面的 docker 组合来运行一个容器。
+- ubuntu:15.10 指定要运行的镜像，Docker 首先从本地主机上查找镜像是否存在，如果不存在，Docker 就会从镜像仓库 Docker Hub 下载公共镜像。
+- /bin/echo "Hello world": 在启动的容器里执行的命令
+
+以上命令可以解释为：Docker 以 ubuntu15.10 镜像创建一个新容器，然后在容器里执行 bin/echo "Hello world"。
+
+##### 运行交互式的容器
+
+``` bash
+runoob@runoob:~$ docker run -i -t ubuntu:15.10 /bin/bash
+root@0123ce188bd8:/#
+```
+
+- -t: 在新容器内指定一个伪终端或终端。
+- -i: 允许你对容器内的标准输入 (STDIN) 进行交互。
+
+通过 docker 的两个参数 ``-i`` ``-t``，我们让 docker 运行的容器实现"对话"的能力。注意第二行 root@0123ce188bd8:/#，此时我们已进入一个 ubuntu15.10 系统的容器。
+
+我们可以通过运行 ``exit`` 命令或者使用 ``CTRL+D`` 来退出容器。
+
+##### 启动容器（后台模式）
+
+``` bash
+runoob@runoob:~$ docker run -d ubuntu:15.10 /bin/sh -c "while true; do echo hello world; sleep 1; done"
+2b1b7a428627c51ab8810d541d759f072b4fc75487eed05812646b8534a2fe63
+```
+
+在输出中，我们没有看到期望的 "hello world"，而是一串长字符，这个长字符串叫做容器 ID，对每个容器来说都是唯一的。
+
+我们可以通过容器 ID 来查看对应的容器发生了什么。首先，我们需要确认容器有在运行，可以通过 docker ps 来查看：
+``` bash
+runoob@runoob:~$ docker ps
+```
+
+在宿主主机内使用 docker logs 命令，查看容器内的标准输出：
+``` bash
+runoob@runoob:~$ docker logs 2b1b7a428627
+runoob@runoob:~$ docker logs amazing_cori
+```
+
+##### 停止容器
+
+使用 docker stop 命令来停止容器：
+``` bash
+runoob@runoob:~$ docker stop 2b1b7a428627
+runoob@runoob:~$ docker stop amazing_cori
+```
+
+### 5 Docker 客户端命令
+
+直接输入 docker 命令来查看到 Docker 客户端的所有命令选项。
+``` bash
+runoob@runoob:~# docker
+```
+
+可以通过命令 docker command --help 更深入的了解指定的 Docker 命令使用方法。
+``` bash
+runoob@runoob:~# docker stats --help
+```
+
+##### 容器使用
+
+获取镜像
+``` bash
+$ docker pull ubuntu
+```
+
+启动容器
+``` bash
+$ docker run -it ubuntu /bin/bash
+```
+
+退出终端
+``` bash
+$ exit
+```
+
+启动已停止运行的容器
+``` bash
+$ docker ps -a
+$ docker start b750bbbcfd88
+```
+
+后台运行
+``` bash
+$ docker run -itd --name ubuntu-test ubuntu /bin/bash
+```
+``注：加了 -d 参数默认不会进入容器，想要进入容器需要使用指令 docker exec。``
+
+停止一个容器
+``` bash
+$ docker stop <容器 ID>
+$ docker restart <容器 ID>
+```
+
+进入容器（在使用 ``-d`` 参数时，容器启动后会进入后台。此时想要进入容器，可以通过以下指令进入：）
+``` bash
+# docker attach
+$ docker attach 1e560fca3906
+# docker exec：推荐大家使用 docker exec 命令，因为此退出容器终端，不会导致容器的停止。
+$ docker exec -it 243c32535da7 /bin/bash
+```
+
+导出和导入容器
+``` bash
+$ docker export 1e560fca3906 > ubuntu.tar
+$ cat docker/ubuntu.tar | docker import - test/ubuntu:v1
+```
+此外，也可以通过指定 URL 或者某个目录来导入，例如：``$ docker import http://example.com/exampleimage.tgz example/imagerepo``
+
+删除容器
+``` bash
+$ docker rm -f 1e560fca3906
+# 下面的命令可以清理掉所有处于终止状态的容器
+$ docker container prune
+```
+
+### 6 docker 运行一个 web 应用
+
+以上运行的容器并没有一些什么特别的用处。现在尝试使用 docker 构建一个 web 应用程序。
+``` bash
+runoob@runoob:~# docker pull training/webapp                               #载入镜像
+runoob@runoob:~# docker run -d -P training/webapp python app.py            #运行一个Python Flask应用来运行一个web应用
+```
+
+- -d:让容器在后台运行。
+- -P:将容器内部使用的网络端口映射到我们使用的主机上。
+
+查看 WEB 应用容器
+``` bash
+runoob@runoob:~#  docker ps
+CONTAINER ID        IMAGE               COMMAND             ...        PORTS
+d3d5e39ed9d3        training/webapp     "python app.py"     ...        0.0.0.0:32769->5000/tcp
+```
+
+这里多了端口信息，Docker 开放了 5000 端口（默认 Python Flask 端口）映射到主机端口 32769 上。
+
+可以通过浏览器访问 WEB 应用：``192.168.239.130:32769``。
+
+注意，也可以通过 -p 参数来设置不一样的端口：
+``` bash
+runoob@runoob:~$ docker run -d -p 5000:5000 training/webapp python app.py
+```
+
+此时，docker ps 查看正在运行的容器
+``` bash
+runoob@runoob:~#  docker ps
+CONTAINER ID        IMAGE                             PORTS                     NAMES
+bf08b7f2cd89        training/webapp     ...        0.0.0.0:5000->5000/tcp    wizardly_chandrasekhar
+d3d5e39ed9d3        training/webapp     ...        0.0.0.0:32769->5000/tcp   xenodochial_hoov
+```
+
+- 查看网络端口映射：``docker port bf08b7f2cd89``
+- 查看 WEB 应用程序日志：``docker logs -f bf08b7f2cd89``
+- 查看 WEB 应用程序容器的进程：``docker top wizardly_chandrasekhar``
+- 检查 WEB 应用程序（使用 docker inspect 来查看 Docker 的底层信息）
+
+``` bash
+runoob@runoob:~$ docker inspect wizardly_chandrasekhar
+[
+    {
+        "Id": "bf08b7f2cd897b5964943134aa6d373e355c286db9b9885b1f60b6e8f82b2b85",
+        "Created": "2018-09-17T01:41:26.174228707Z",
+        "Path": "python",
+        "Args": [
+            "app.py"
+        ],
+        "State": {
+            "Status": "running",
+            "Running": true,
+            "Paused": false,
+            "Restarting": false,
+            "OOMKilled": false,
+            "Dead": false,
+            "Pid": 23245,
+            "ExitCode": 0,
+            "Error": "",
+            "StartedAt": "2018-09-17T01:41:26.494185806Z",
+            "FinishedAt": "0001-01-01T00:00:00Z"
+        },
+......
+```
+它会返回一个 JSON 文件记录着 Docker 容器的配置和状态信息。
+
+停止 WEB 应用容器
+``` bash
+runoob@runoob:~$ docker stop wizardly_chandrasekhar
+wizardly_chandrasekhar
+```
+
+重启 WEB 应用容器
+``` bash
+runoob@runoob:~$ docker start wizardly_chandrasekhar
+wizardly_chandrasekhar
+```
+
+**已经停止的容器，我们可以使用命令 docker start 来启动。**
+
+``docker ps -l`` 查询最后一次创建的容器：
+``` bash
+$ docker ps -l
+CONTAINER ID        IMAGE                             PORTS                     NAMES
+bf08b7f2cd89        training/webapp     ...        0.0.0.0:5000->5000/tcp    wizardly_chandrasekhar
+```
+
+移除 WEB 应用容器
+``` bash
+runoob@runoob:~$ docker rm wizardly_chandrasekhar
+wizardly_chandrasekhar
+```
+
+删除容器时，容器必须是停止状态，否则会报错误。
+
+
+# Docker 管理
+
+- Docker 镜像 https://www.runoob.com/docker/docker-image-usage.html
+- Docker 容器连接/互联 https://www.runoob.com/docker/docker-container-connection.html
+- Docker 仓库管理 https://www.runoob.com/docker/docker-repository.html
+- Docker Dockerfile 定制一个镜像。
+- Docker Compose 定义和运行多容器。
+- Docker Machine 集中管理所有的 docker 主机，比如快速的给 100 台服务器安装上 docker。
+- Docker Swarm 是 Docker 的集群管理工具。它将 Docker 主机池转变为单个虚拟 Docker 主机。 Docker Swarm 提供了标准的 Docker API，所有任何已经与 Docker 守护程序通信的工具都可以使用 Swarm 轻松地扩展到多个主机。
