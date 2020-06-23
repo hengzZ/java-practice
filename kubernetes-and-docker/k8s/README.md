@@ -1,6 +1,6 @@
 # Kubernetes (k8s)
 
-#### 目录
+### 目录
 
 1. 开始使用 Kubernetes 和 Docker
     - 创建、 运行及共享容器镜像
@@ -32,7 +32,8 @@
     - 使用 Kubernetes 服务目录扩展 Kubernetes
     - 基于 Kubernetes 搭建的平台
 
-附录：
+### 附录
+
 1. 在多个集群中使用 kubectl
 1. 使用 kubeadm 配置多节点集群
 1. 使用其他容器运行时
@@ -41,11 +42,46 @@
 —— 《Kubernetes in Action》
 
 
-## 1 开始使用 Kubernetes 和 Docker
+<br>
+
+## 开始使用 Kubernetes 和 Docker （Quick Start）
 
 ### I Docker 环境搭建
 
 #### 1.1 安装 Docker 并运行 Hello World 容器
+
+``` bash
+sudo apt-get remove docker docker-engine docker.io containerd runc
+sudo apt-get update   #更新 apt 包索引
+# 安装 apt 依赖包，通过 HTTPS 来获取仓库
+sudo apt-get install apt-transport-https ca-certificates curl gnupg-agent software-properties-common
+# 添加 Docker 的官方 GPG 密钥
+curl -fsSL https://download.docker.com/linux/ubuntu/gpg | sudo apt-key add -
+sudo apt-key list                        #列出已保存在系统中的key
+sudo apt-key fingerprint 0EBFCD88        #搜索指纹的后8个字符为0EBFCD88的密钥（确认docker的密钥存在）
+# 设置稳定版仓库
+sudo add-apt-repository "deb [arch=amd64] https://download.docker.com/linux/ubuntu $(lsb_release -cs) stable"
+# 安装 Docker Engine-Community
+sudo apt-get update
+# 安装 docker-ce 貌似就够了，docker-ce-cli 和 containerd.io 不装好像也能用
+sudo apt-get install docker-ce docker-ce-cli containerd.io
+
+# 测试 Docker 是否安装成功
+sudo docker run hello-world
+```
+
+``` bash
+sudo yum remove docker docker-client docker-client-latest docker-common docker-latest docker-latest-logrotate docker-logrotate docker-engine
+sudo yum install -y yum-utils device-mapper-persistent-data lvm2
+sudo yum-config-manager --add-repo https://download.docker.com/linux/centos/docker-ce.repo
+sudo yum install docker-ce docker-ce-cli containerd.io
+
+# yum list docker-ce --showduplicates | sort -r
+# sudo yum install docker-ce-<VERSION_STRING> docker-ce-cli-<VERSION_STRING> containerd.io
+
+sudo systemctl start docker
+sudo docker run hello-world
+```
 
 #### 1.2 创建一个简单的 Node.js 应用
 
